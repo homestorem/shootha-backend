@@ -7,11 +7,15 @@ import {
   Pressable,
   Switch,
   Platform,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import { useBookings } from "@/context/BookingsContext";
+import { useAuth } from "@/context/AuthContext";
+import { GuestModal } from "@/components/GuestModal";
 
 interface SettingRowProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -59,8 +63,9 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { bookings } = useBookings();
+  const { user, isGuest, logout } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkMode] = useState(true);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
@@ -70,6 +75,29 @@ export default function ProfileScreen() {
   const totalSpent = bookings
     .filter(b => b.status === "completed")
     .reduce((sum, b) => sum + b.price, 0);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "تسجيل الخروج",
+      "هل تريد تسجيل الخروج من حسابك؟",
+      [
+        { text: "تراجع", style: "cancel" },
+        {
+          text: "تسجيل الخروج",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/select-role");
+          },
+        },
+      ]
+    );
+  };
+
+  const displayName = isGuest ? "ضيف" : (user?.name ?? "مستخدم");
+  const displayPhone = isGuest ? "—" : (user?.phone ?? "—");
+  const roleLabel = isGuest ? "وضع الضيف" : (user?.role === "owner" ? "صاحب ملعب" : "لاعب");
+  const roleIcon: keyof typeof Ionicons.glyphMap = isGuest ? "eye-outline" : (user?.role === "owner" ? "business" : "football");
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
@@ -82,29 +110,46 @@ export default function ProfileScreen() {
           <Text style={styles.title}>حسابي</Text>
         </View>
 
+        {isGuest ? (
+          <Pressable style={styles.guestBanner} onPress={() => setShowGuestModal(true)}>
+            <Ionicons name="eye-outline" size={22} color={Colors.warning} />
+            <View style={styles.guestBannerText}>
+              <Text style={styles.guestBannerTitle}>وضع الضيف</Text>
+              <Text style={styles.guestBannerSub}>اضغط لإنشاء حساب والاستمتاع بكل الميزات</Text>
+            </View>
+            <Ionicons name="chevron-back" size={18} color={Colors.warning} />
+          </Pressable>
+        ) : null}
+
         <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>أ</Text>
+          <View style={[styles.avatarCircle, isGuest && { borderColor: Colors.warning }]}>
+            <Text style={[styles.avatarInitial, isGuest && { color: Colors.warning }]}>
+              {displayName.charAt(0)}
+            </Text>
           </View>
           <View style={styles.avatarInfo}>
-            <Text style={styles.userName}>أحمد محمد</Text>
-            <Text style={styles.userPhone}>+964 770 123 4567</Text>
+            <Text style={styles.userName}>{displayName}</Text>
+            <Text style={styles.userPhone}>{displayPhone}</Text>
             <View style={styles.captainBadge}>
-              <Ionicons name="shield-checkmark" size={12} color={Colors.primary} />
-              <Text style={styles.captainText}>قائد الفريق</Text>
+              <Ionicons name={roleIcon} size={12} color={isGuest ? Colors.warning : Colors.primary} />
+              <Text style={[styles.captainText, isGuest && { color: Colors.warning }]}>{roleLabel}</Text>
             </View>
           </View>
-          <Pressable style={styles.editBtn}>
-            <Ionicons name="pencil" size={16} color={Colors.textSecondary} />
-          </Pressable>
+          {!isGuest && (
+            <Pressable style={styles.editBtn}>
+              <Ionicons name="pencil" size={16} color={Colors.textSecondary} />
+            </Pressable>
+          )}
         </View>
 
-        <View style={styles.statsRow}>
-          <StatCard label="مباريات" value={completedCount} icon="football" />
-          <StatCard label="قادمة" value={upcomingCount} icon="calendar" />
-          <StatCard label="مصاريف" value={`${(totalSpent / 1000).toFixed(0)}k`} icon="wallet" />
-          <StatCard label="لا حضور" value="0" icon="close-circle" />
-        </View>
+        {!isGuest && (
+          <View style={styles.statsRow}>
+            <StatCard label="مباريات" value={completedCount} icon="football" />
+            <StatCard label="قادمة" value={upcomingCount} icon="calendar" />
+            <StatCard label="مصاريف" value={`${(totalSpent / 1000).toFixed(0)}k`} icon="wallet" />
+            <StatCard label="لا حضور" value="0" icon="close-circle" />
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>الإعدادات</Text>
         <View style={styles.settingsGroup}>
@@ -121,56 +166,30 @@ export default function ProfileScreen() {
               />
             }
           />
-          <SettingRow
-            icon="moon-outline"
-            label="الوضع الداكن"
-            value="دائمًا"
-          />
-          <SettingRow
-            icon="language-outline"
-            label="اللغة"
-            value="العربية"
-            onPress={() => {}}
-          />
-          <SettingRow
-            icon="location-outline"
-            label="المدينة"
-            value="الموصل"
-            onPress={() => {}}
-          />
+          <SettingRow icon="moon-outline" label="الوضع الداكن" value="دائمًا" />
+          <SettingRow icon="language-outline" label="اللغة" value="العربية" onPress={() => {}} />
+          <SettingRow icon="location-outline" label="المدينة" value="الموصل" onPress={() => {}} />
         </View>
 
-        <Text style={styles.sectionTitle}>الحساب</Text>
-        <View style={styles.settingsGroup}>
-          <SettingRow
-            icon="card-outline"
-            label="طرق الدفع"
-            onPress={() => {}}
-          />
-          <SettingRow
-            icon="shield-outline"
-            label="الخصوصية والأمان"
-            onPress={() => {}}
-          />
-          <SettingRow
-            icon="help-circle-outline"
-            label="المساعدة والدعم"
-            onPress={() => {}}
-          />
-          <SettingRow
-            icon="information-circle-outline"
-            label="عن التطبيق"
-            value="v1.0.0"
-          />
-        </View>
+        {!isGuest && (
+          <>
+            <Text style={styles.sectionTitle}>الحساب</Text>
+            <View style={styles.settingsGroup}>
+              <SettingRow icon="card-outline" label="طرق الدفع" onPress={() => {}} />
+              <SettingRow icon="shield-outline" label="الخصوصية والأمان" onPress={() => {}} />
+              <SettingRow icon="help-circle-outline" label="المساعدة والدعم" onPress={() => {}} />
+              <SettingRow icon="information-circle-outline" label="عن التطبيق" value="v1.0.0" />
+            </View>
+          </>
+        )}
 
-        <Text style={styles.sectionTitle}>منطقة الخطر</Text>
+        <Text style={styles.sectionTitle}>الجلسة</Text>
         <View style={styles.settingsGroup}>
           <SettingRow
             icon="log-out-outline"
-            label="تسجيل الخروج"
-            onPress={() => {}}
-            danger
+            label={isGuest ? "إنشاء حساب" : "تسجيل الخروج"}
+            onPress={isGuest ? () => setShowGuestModal(true) : handleLogout}
+            danger={!isGuest}
           />
         </View>
 
@@ -178,175 +197,81 @@ export default function ProfileScreen() {
           <Text style={styles.footerText}>Shoot'ha © 2026 – الموصل</Text>
         </View>
       </ScrollView>
+
+      <GuestModal visible={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    gap: 0,
-  },
-  header: {
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  title: {
-    color: Colors.text,
-    fontSize: 26,
-    fontFamily: "Cairo_700Bold",
-  },
-  avatarSection: {
+  container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 20, gap: 0 },
+  header: { paddingTop: 8, paddingBottom: 16 },
+  title: { color: Colors.text, fontSize: 26, fontFamily: "Cairo_700Bold" },
+  guestBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
-    gap: 14,
-  },
-  avatarCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "rgba(46,204,113,0.15)",
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: {
-    color: Colors.primary,
-    fontSize: 24,
-    fontFamily: "Cairo_700Bold",
-  },
-  avatarInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  userName: {
-    color: Colors.text,
-    fontSize: 17,
-    fontFamily: "Cairo_700Bold",
-  },
-  userPhone: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontFamily: "Cairo_400Regular",
-  },
-  captainBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
-  },
-  captainText: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontFamily: "Cairo_600SemiBold",
-  },
-  editBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 12,
-    alignItems: "center",
-    gap: 4,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statValue: {
-    color: Colors.text,
-    fontSize: 18,
-    fontFamily: "Cairo_700Bold",
-  },
-  statLabel: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    fontFamily: "Cairo_400Regular",
-    textAlign: "center",
-  },
-  sectionTitle: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontFamily: "Cairo_600SemiBold",
-    marginBottom: 8,
-    marginTop: 8,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  settingsGroup: {
-    backgroundColor: Colors.card,
+    backgroundColor: "rgba(255,149,0,0.08)",
     borderRadius: 16,
-    overflow: "hidden",
+    padding: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
-  },
-  settingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderColor: "rgba(255,149,0,0.25)",
+    marginBottom: 12,
     gap: 12,
   },
+  guestBannerText: { flex: 1, gap: 2 },
+  guestBannerTitle: { color: Colors.warning, fontSize: 14, fontFamily: "Cairo_700Bold" },
+  guestBannerSub: { color: Colors.textSecondary, fontSize: 12, fontFamily: "Cairo_400Regular" },
+  avatarSection: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: Colors.card, borderRadius: 20, padding: 16,
+    borderWidth: 1, borderColor: Colors.border, marginBottom: 16, gap: 14,
+  },
+  avatarCircle: {
+    width: 58, height: 58, borderRadius: 29,
+    backgroundColor: "rgba(46,204,113,0.15)",
+    borderWidth: 2, borderColor: Colors.primary,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarInitial: { color: Colors.primary, fontSize: 24, fontFamily: "Cairo_700Bold" },
+  avatarInfo: { flex: 1, gap: 2 },
+  userName: { color: Colors.text, fontSize: 17, fontFamily: "Cairo_700Bold" },
+  userPhone: { color: Colors.textSecondary, fontSize: 13, fontFamily: "Cairo_400Regular" },
+  captainBadge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  captainText: { color: Colors.primary, fontSize: 12, fontFamily: "Cairo_600SemiBold" },
+  editBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center",
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  statsRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
+  statCard: {
+    flex: 1, backgroundColor: Colors.card, borderRadius: 14, padding: 12,
+    alignItems: "center", gap: 4, borderWidth: 1, borderColor: Colors.border,
+  },
+  statValue: { color: Colors.text, fontSize: 18, fontFamily: "Cairo_700Bold" },
+  statLabel: { color: Colors.textSecondary, fontSize: 11, fontFamily: "Cairo_400Regular", textAlign: "center" },
+  sectionTitle: {
+    color: Colors.textSecondary, fontSize: 12, fontFamily: "Cairo_600SemiBold",
+    marginBottom: 8, marginTop: 8, textTransform: "uppercase", letterSpacing: 1,
+  },
+  settingsGroup: {
+    backgroundColor: Colors.card, borderRadius: 16, overflow: "hidden",
+    borderWidth: 1, borderColor: Colors.border, marginBottom: 16,
+  },
+  settingRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 13, paddingHorizontal: 14,
+    borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 12,
+  },
   settingIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center",
   },
-  settingLabel: {
-    flex: 1,
-    color: Colors.text,
-    fontSize: 14,
-    fontFamily: "Cairo_400Regular",
-  },
-  settingRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  settingValue: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontFamily: "Cairo_400Regular",
-  },
-  footer: {
-    alignItems: "center",
-    paddingVertical: 16,
-  },
-  footerText: {
-    color: Colors.textTertiary,
-    fontSize: 12,
-    fontFamily: "Cairo_400Regular",
-  },
+  settingLabel: { flex: 1, color: Colors.text, fontSize: 14, fontFamily: "Cairo_400Regular" },
+  settingRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  settingValue: { color: Colors.textSecondary, fontSize: 13, fontFamily: "Cairo_400Regular" },
+  footer: { alignItems: "center", paddingVertical: 16 },
+  footerText: { color: Colors.textTertiary, fontSize: 12, fontFamily: "Cairo_400Regular" },
 });

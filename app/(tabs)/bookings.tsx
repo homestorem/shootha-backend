@@ -14,6 +14,8 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/colors";
 import { useBookings, Booking, formatDate, formatPrice } from "@/context/BookingsContext";
+import { useAuth } from "@/context/AuthContext";
+import { GuestModal } from "@/components/GuestModal";
 
 const TABS = ["القادمة", "المكتملة", "الملغاة"];
 
@@ -106,12 +108,14 @@ function BookingCard({ booking }: { booking: Booking }) {
 export default function BookingsScreen() {
   const insets = useSafeAreaInsets();
   const { bookings, isLoading } = useBookings();
+  const { isGuest } = useAuth();
   const [activeTab, setActiveTab] = useState("القادمة");
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
-  const filtered = bookings.filter(b => {
+  const filtered = isGuest ? [] : bookings.filter(b => {
     if (activeTab === "القادمة") return b.status === "upcoming" || b.status === "active";
     if (activeTab === "المكتملة") return b.status === "completed";
     if (activeTab === "الملغاة") return b.status === "cancelled";
@@ -123,9 +127,17 @@ export default function BookingsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>حجوزاتي</Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{bookings.filter(b => b.status === "upcoming").length}</Text>
+          <Text style={styles.badgeText}>{isGuest ? 0 : bookings.filter(b => b.status === "upcoming").length}</Text>
         </View>
       </View>
+
+      {isGuest && (
+        <Pressable style={styles.guestBanner} onPress={() => setShowGuestModal(true)}>
+          <Ionicons name="lock-closed-outline" size={16} color={Colors.warning} />
+          <Text style={styles.guestBannerText}>سجّل حسابك لحجز الملاعب وعرض سجل حجوزاتك</Text>
+          <Ionicons name="chevron-back" size={14} color={Colors.warning} />
+        </Pressable>
+      )}
 
       <View style={styles.tabsRow}>
         {TABS.map(tab => (
@@ -163,6 +175,7 @@ export default function BookingsScreen() {
           filtered.map(b => <BookingCard key={b.id} booking={b} />)
         )}
       </ScrollView>
+      <GuestModal visible={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </View>
   );
 }
@@ -198,6 +211,24 @@ const styles = StyleSheet.create({
     color: "#000",
     fontSize: 12,
     fontFamily: "Cairo_700Bold",
+  },
+  guestBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,149,0,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,149,0,0.25)",
+    gap: 8,
+  },
+  guestBannerText: {
+    flex: 1,
+    color: Colors.warning,
+    fontSize: 12,
+    fontFamily: "Cairo_400Regular",
   },
   tabsRow: {
     flexDirection: "row",

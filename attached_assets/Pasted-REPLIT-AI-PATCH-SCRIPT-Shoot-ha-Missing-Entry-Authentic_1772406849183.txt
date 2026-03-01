@@ -1,0 +1,216 @@
+REPLIT AI PATCH SCRIPT
+Shoot’ha – Missing Entry & Authentication Module
+
+Add the following module WITHOUT rebuilding the project.
+Do NOT overwrite existing systems.
+Integrate cleanly into current architecture.
+
+🎬 1. SPLASH SCREEN MODULE
+
+Create a splash screen page that:
+
+Uses dark mode background (#121212)
+
+Displays Shoot’ha logo centered
+
+Shows animated rotating football around logo
+
+Duration: 3 seconds
+
+After 3 seconds:
+
+If JWT exists → redirect to correct dashboard by role
+
+If no JWT → redirect to Role Selection page
+
+Ensure smooth fade animation.
+Mobile-first.
+RTL support.
+
+🖼 2. LOGO SYSTEM
+
+Create centralized logo assets folder.
+
+Use logo in:
+
+Splash
+
+Authentication pages
+
+Navbar center button
+
+Loading states
+
+Ensure scalable SVG format.
+Support dark/light theme variants.
+
+👤 3. ROLE SELECTION PAGE
+
+Create route: /select-role
+
+Design:
+
+Title:
+"اختر طريقة الدخول"
+
+Three large elevated cards:
+
+Player (لاعب)
+
+Venue Owner (صاحب ملعب)
+
+Continue as Guest (الدخول كضيف)
+
+Each card includes:
+
+Icon
+
+Short description
+
+Hover animation
+
+Neon green accent on active state
+
+Navigation:
+
+Player → /auth/player/login
+Owner → /auth/owner/login
+Guest → /guest/home
+
+🔐 4. AUTHENTICATION STRUCTURE
+
+Create modular authentication system.
+
+Routes:
+
+/auth/player/login
+/auth/player/register
+/auth/player/verify-otp
+
+/auth/owner/login
+/auth/owner/register
+/auth/owner/verify-otp
+
+Ensure:
+
+Clean separation between Player and Owner roles
+
+Shared OTP verification service
+
+Proper error handling
+
+Phone uniqueness validation
+
+Device ID storage
+
+JWT issuance after verification
+
+👀 5. GUEST MODE SYSTEM
+
+Guest permissions:
+
+Browse venues
+
+Search fields
+
+View map
+
+Guest restrictions:
+
+Cannot book
+
+Cannot review
+
+Cannot post player requests
+
+Cannot rebook
+
+If guest presses restricted action:
+Show modal:
+"سجل حسابك للحجز"
+Buttons:
+
+تسجيل الدخول
+
+إنشاء حساب
+
+🛡 6. AUTH MIDDLEWARE
+
+Implement role-based protection.
+
+Rules:
+
+If token missing:
+→ Allow only public routes
+
+If token exists:
+→ Validate role
+→ Redirect to correct dashboard
+
+If device is banned:
+→ Block access entirely
+
+Ensure middleware works for:
+
+Player routes
+
+Owner routes
+
+Admin routes
+
+🧭 7. ROUTING FLOW
+
+Application start flow:
+
+App Launch
+→ Splash
+→ Check JWT
+→ If exists → Role-based dashboard
+→ If not → Role Selection
+
+From Role Selection:
+→ Player Login/Register
+→ Owner Login/Register
+→ Guest Home
+
+🎨 8. UI REQUIREMENTS
+
+Dark mode default
+
+Neon green only for primary action buttons
+
+Inline validation messages
+
+Input focus glow
+
+Password visibility toggle
+
+Skeleton loading instead of spinners
+
+Fully responsive
+
+RTL Arabic default
+
+🔒 9. SECURITY REQUIREMENTS
+
+Hash passwords securely
+
+Validate phone uniqueness
+
+Protect routes
+
+Prevent duplicate accounts
+
+Store device ID on registration
+
+Prepare for future ban logic integration
+
+🚀 FINAL INSTRUCTION FOR REPLIT AI
+
+Integrate this module cleanly into the existing Shoot’ha architecture without duplicating existing systems.
+
+Do not rebuild booking, venue, or dashboard systems.
+
+Ensure modular expansion compatibility.
+
+Production-ready code only.

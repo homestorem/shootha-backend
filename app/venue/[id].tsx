@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/colors";
+import { useAuth } from "@/context/AuthContext";
+import { GuestModal } from "@/components/GuestModal";
 import {
   MOCK_VENUES,
   TIME_SLOTS,
@@ -47,6 +49,8 @@ export default function VenueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { addBooking } = useBookings();
+  const { isGuest } = useAuth();
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const venue = MOCK_VENUES.find(v => v.id === id);
   const dates = generateDates();
@@ -72,6 +76,10 @@ export default function VenueDetailScreen() {
   const bookedForSelectedDate = BOOKED_SLOTS[selectedDate] ?? [];
 
   const handleBooking = async () => {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
     if (!selectedTime) {
       Alert.alert("اختر وقتًا", "الرجاء اختيار وقت للحجز");
       return;
@@ -277,6 +285,7 @@ export default function VenueDetailScreen() {
           </Text>
         </Pressable>
       </View>
+      <GuestModal visible={showGuestModal} onClose={() => setShowGuestModal(false)} />
     </View>
   );
 }
