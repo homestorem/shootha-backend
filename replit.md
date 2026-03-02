@@ -5,9 +5,10 @@
 Shoot'ha (شوتها) is a mobile-first sports venue booking application built for the Saudi/Arabic market. It allows players to discover, book, and manage football field reservations, and lets venue owners manage their sports facilities. The app is a React Native / Expo application with an Express.js backend server, targeting iOS, Android, and web platforms.
 
 Key features include:
-- Role-based access (Player, Owner, Guest, Supervisor)
+- Role-based access (Player, Owner, Guest, Supervisor) with separate UIs for each
 - OTP-based phone authentication + password for players/owners
-- Venue discovery and booking with time slot selection
+- **Fully separate Owner App** at `/owner` — 4-tab interface (Home, Bookings, Stats, Settings)
+- Venue discovery and booking with time slot selection (player side)
 - Booking management with player payment tracking
 - 1-Click rebook system for repeating past bookings
 - Animated splash screen with football animation
@@ -20,6 +21,13 @@ Key features include:
 - Multi-image upload for venues (max 6, 3x2 grid, 3MB limit per image)
 - Location capture: player/owner device GPS stored at registration
 - Supervisor role: temporary 2-hour JWT, view-only access via `/api/auth/supervisor-token`
+
+### Owner App (app/owner/)
+Completely separate interface at route `/owner`, only accessible to users with `role='owner'`:
+- **Home** (`owner/(tabs)/index.tsx`): Greeting, ad banner, live active booking card with countdown timer, today's summary stats, recent bookings list
+- **Bookings** (`owner/(tabs)/bookings.tsx`): Time-slot grid view for today (08:00–23:00), list view for month/year, FAB to add manual bookings, booking detail modal with cancel
+- **Statistics** (`owner/(tabs)/stats.tsx`): 4 summary cards (app bookings, total revenue, today's bookings, occupancy rate), bar charts for last 7 days + peak hours
+- **Settings** (`owner/(tabs)/settings.tsx`): Edit venue info, dark/light toggle, WhatsApp + support form, delete account (with upcoming booking protection), logout
 
 ## User Preferences
 
@@ -79,6 +87,18 @@ The app uses file-based routing under the `app/` directory:
 - `GET /api/auth/me` – Returns authenticated user info (JWT protected)
 - `PATCH /api/auth/location` – Updates user lat/lon (JWT protected)
 - `POST /api/auth/supervisor-token` – Issues a temporary view-only JWT (requires `SUPERVISOR_MASTER_KEY`)
+- `GET /api/owner/venue` – Get full owner venue details (owner only)
+- `PATCH /api/owner/venue` – Update venue info: name, area, fieldSize, bookingPrice, facilities (owner only)
+- `GET /api/owner/bookings?filter=today|month|year` – Get owner's bookings with optional filter (owner only)
+- `POST /api/owner/bookings` – Create manual booking with conflict check (owner only)
+- `PATCH /api/owner/bookings/:id` – Update booking (owner only, ownership validated)
+- `DELETE /api/owner/bookings/:id` – Cancel booking (owner only, ownership validated)
+- `GET /api/owner/stats` – Revenue, counts, occupancy rate, 7-day chart, peak hours (owner only)
+
+**Owner Booking Type** (`server/storage.ts` → `OwnerBooking`):
+```typescript
+{ id, ownerId, playerName, playerPhone, date (YYYY-MM-DD), time (HH:MM), duration (hours), price (IQD/hr), fieldSize, status, source ('app'|'manual'), createdAt }
+```
 
 **Authentication:**
 - Phone number + OTP (no passwords for end users)

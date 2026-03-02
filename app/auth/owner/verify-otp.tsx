@@ -96,7 +96,7 @@ export default function OwnerVerifyOtpScreen() {
         await login(params.phone, otp);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)");
+      router.replace("/owner");
     } catch (e: any) {
       const msg = e?.message ?? "رمز التحقق غير صحيح";
       setError(msg);

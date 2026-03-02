@@ -1,0 +1,263 @@
+REPLIT AI SCRIPT — SEPARATE VENUE OWNER APPLICATION
+
+Project: Shoot’ha
+Task: Create a fully separated Venue Owner interface independent from Player interface.
+
+Do NOT rebuild existing player system.
+Create a dedicated owner experience.
+
+🏟 1️⃣ ROLE-BASED APP SEPARATION
+
+When user logs in:
+
+IF role = PLAYER
+→ redirect to:
+
+/app/home
+
+IF role = OWNER
+→ redirect to:
+
+/owner/home
+
+Player and Owner interfaces must be completely separated.
+
+Different navigation, pages, and layouts.
+
+No shared bottom navigation.
+
+🧭 2️⃣ OWNER APP STRUCTURE
+
+Create Owner App with Bottom Navigation (RTL):
+
+Tabs (Right → Left):
+
+1️⃣ الرئيسية
+2️⃣ الحجوزات
+3️⃣ الإحصائيات
+4️⃣ الإعدادات
+
+🏠 3️⃣ OWNER HOME PAGE (الرئيسية)
+
+Purpose: Quick overview.
+
+Sections:
+
+✅ Advertisement Banner
+
+(Admin-controlled ads appear here)
+
+✅ Active Booking Now
+
+Show current running booking:
+
+Player name
+
+Time remaining countdown
+
+Field size
+
+Status badge (جارية الآن)
+
+If none:
+"لا يوجد حجز حالياً"
+
+🔔 Booking Notifications
+
+Show latest events:
+
+حجز جديد
+
+إلغاء حجز
+
+تعديل حجز
+
+Realtime or auto refresh.
+
+📢 Alerts Section
+
+Examples:
+
+لديك وقت فارغ الساعة 3 مساءً
+
+لديك حجوزات قادمة اليوم
+
+📅 4️⃣ BOOKINGS MANAGEMENT PAGE
+
+(Main working page — like paper notebook replacement)
+
+Tabs inside page:
+
+اليوم
+
+هذا الشهر
+
+هذه السنة
+
+Time Schedule View
+
+Display day timeline:
+
+Example:
+
+08:00 — فارغ
+09:00 — محجوز
+10:00 — محجوز
+
+Color coding:
+
+Green → booked
+
+Grey → empty
+
+Yellow → manual booking
+
+Owner Manual Booking
+
+Button:
+"+ إضافة حجز"
+
+Owner can enter:
+
+Player Name
+
+Date
+
+Time
+
+Duration
+
+Price
+
+After saving:
+
+✅ Slot becomes reserved
+✅ Appears booked for players in app
+
+(simulates real-life notebook booking)
+
+Booking Actions
+
+Owner can:
+
+Cancel booking
+
+Edit booking
+
+Keep booking active
+
+Changes must sync instantly with player side.
+
+📊 5️⃣ STATISTICS PAGE
+
+Show analytics:
+
+Cards:
+
+عدد الحجوزات عبر التطبيق
+
+مجموع الدخل الكلي
+
+حجوزات اليوم
+
+نسبة الإشغال
+
+Charts:
+
+Bookings per day
+
+Monthly revenue
+
+Peak hours
+
+Only count bookings made via app separately from manual bookings.
+
+⚙️ 6️⃣ OWNER SETTINGS PAGE
+
+Sections:
+
+Account
+
+Edit venue info
+
+Edit price
+
+Edit field size
+
+Upload images
+
+Update location
+
+Appearance
+
+Dark / Light mode (global)
+
+Support
+
+Contact support form
+
+WhatsApp link
+
+About App
+
+App info
+
+Version
+
+Delete Account
+
+Require:
+
+Confirmation dialog
+
+Password confirmation
+
+Prevent deletion if future bookings exist.
+
+Logout
+
+Clear token
+
+Redirect to splash
+
+🔔 NOTIFICATIONS SYSTEM
+
+Owner receives notifications for:
+
+New booking
+
+Cancelled booking
+
+Upcoming booking reminder
+
+🔒 SECURITY RULES
+
+Owner can only manage:
+
+His own venue
+
+His own bookings
+
+Validate venue_id ownership on backend.
+
+🎨 UI RULES
+
+Dark mode default
+
+Neon green primary actions
+
+Mobile-first layout
+
+Large readable schedule grid
+
+Smooth transitions
+
+🚀 FINAL INSTRUCTION
+
+Build Owner interface as a separate application layer while sharing backend APIs.
+
+Do NOT affect Player UI or Admin dashboard.
+
+Ensure real-time sync between Owner bookings and Player availability.
+
+Production-ready structure only.

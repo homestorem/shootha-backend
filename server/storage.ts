@@ -10,6 +10,21 @@ export type SupportMessage = {
   createdAt: string;
 };
 
+export type OwnerBooking = {
+  id: string;
+  ownerId: string;
+  playerName: string;
+  playerPhone: string | null;
+  date: string;
+  time: string;
+  duration: number;
+  price: number;
+  fieldSize: string;
+  status: "upcoming" | "active" | "completed" | "cancelled";
+  source: "app" | "manual";
+  createdAt: string;
+};
+
 type InternalUser = AuthUser & { deletedAt?: string };
 
 export interface IStorage {
@@ -49,6 +64,14 @@ export interface IStorage {
   verifyOtp(phone: string, otp: string): Promise<boolean>;
   createSupportMessage(data: { userId: string; subject: string; message: string }): Promise<SupportMessage>;
   getSupportMessages(): Promise<SupportMessage[]>;
+  getOwnerBookings(ownerId: string): Promise<OwnerBooking[]>;
+  getOwnerBookingById(id: string): Promise<OwnerBooking | undefined>;
+  createOwnerBooking(data: Omit<OwnerBooking, "id" | "createdAt">): Promise<OwnerBooking>;
+  updateOwnerBooking(
+    id: string,
+    updates: Partial<Omit<OwnerBooking, "id" | "ownerId" | "createdAt">>
+  ): Promise<OwnerBooking>;
+  cancelOwnerBooking(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -56,12 +79,14 @@ export class MemStorage implements IStorage {
   private authUsers: Map<string, InternalUser>;
   private otpStore: Map<string, { otp: string; expiresAt: number }>;
   private supportMessages: Map<string, SupportMessage>;
+  private ownerBookings: Map<string, OwnerBooking>;
 
   constructor() {
     this.users = new Map();
     this.authUsers = new Map();
     this.otpStore = new Map();
     this.supportMessages = new Map();
+    this.ownerBookings = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -222,6 +247,49 @@ export class MemStorage implements IStorage {
     return Array.from(this.supportMessages.values()).sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+  }
+
+  async getOwnerBookings(ownerId: string): Promise<OwnerBooking[]> {
+    return Array.from(this.ownerBookings.values())
+      .filter((b) => b.ownerId === ownerId)
+      .sort((a, b) => {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        return a.time.localeCompare(b.time);
+      });
+  }
+
+  async getOwnerBookingById(id: string): Promise<OwnerBooking | undefined> {
+    return this.ownerBookings.get(id);
+  }
+
+  async createOwnerBooking(data: Omit<OwnerBooking, "id" | "createdAt">): Promise<OwnerBooking> {
+    const id = randomUUID();
+    const booking: OwnerBooking = {
+      ...data,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    this.ownerBookings.set(id, booking);
+    return booking;
+  }
+
+  async updateOwnerBooking(
+    id: string,
+    updates: Partial<Omit<OwnerBooking, "id" | "ownerId" | "createdAt">>
+  ): Promise<OwnerBooking> {
+    const booking = this.ownerBookings.get(id);
+    if (!booking) throw new Error("الحجز غير موجود");
+    const updated: OwnerBooking = { ...booking, ...updates };
+    this.ownerBookings.set(id, updated);
+    return updated;
+  }
+
+  async cancelOwnerBooking(id: string): Promise<void> {
+    const booking = this.ownerBookings.get(id);
+    if (booking) {
+      this.ownerBookings.set(id, { ...booking, status: "cancelled" });
+    }
   }
 }
 

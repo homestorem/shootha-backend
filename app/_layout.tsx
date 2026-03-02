@@ -145,7 +145,13 @@ function AppNavigator() {
 
   useEffect(() => {
     if (splashDone && !isLoading) {
-      if (user || isGuest) {
+      if (user) {
+        if (user.role === "owner") {
+          router.replace("/owner");
+        } else {
+          router.replace("/(tabs)");
+        }
+      } else if (isGuest) {
         router.replace("/(tabs)");
       } else {
         router.replace("/select-role");
@@ -162,6 +168,7 @@ function AppNavigator() {
     <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="owner" options={{ headerShown: false }} />
         <Stack.Screen name="select-role" options={{ headerShown: false, animation: "fade" }} />
         <Stack.Screen name="auth/player/login" options={{ headerShown: false, animation: "slide_from_bottom" }} />
         <Stack.Screen name="auth/player/register" options={{ headerShown: false, animation: "slide_from_right" }} />

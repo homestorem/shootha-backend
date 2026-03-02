@@ -26,6 +26,30 @@ function safeUser(user: any) {
   };
 }
 
+function safeOwnerUser(user: any) {
+  let images: string[] = [];
+  try {
+    images = user.venueImages ? JSON.parse(user.venueImages) : [];
+  } catch {}
+  return {
+    id: user.id,
+    name: user.name,
+    phone: user.phone,
+    role: user.role,
+    dateOfBirth: user.dateOfBirth ?? null,
+    profileImage: user.profileImage ?? null,
+    venueName: user.venueName ?? null,
+    areaName: user.areaName ?? null,
+    fieldSize: user.fieldSize ?? null,
+    bookingPrice: user.bookingPrice ?? null,
+    hasBathrooms: user.hasBathrooms ?? null,
+    hasMarket: user.hasMarket ?? null,
+    latitude: user.latitude ?? null,
+    longitude: user.longitude ?? null,
+    venueImages: images,
+  };
+}
+
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -46,6 +70,14 @@ export function supervisorGuard(req: Request, res: Response, next: NextFunction)
   const role = (req as any).userRole;
   if (role === "supervisor" && req.method !== "GET") {
     return res.status(403).json({ message: "المشرف المؤقت لديه صلاحيات عرض فقط" });
+  }
+  next();
+}
+
+function ownerGuard(req: Request, res: Response, next: NextFunction) {
+  const role = (req as any).userRole;
+  if (role !== "owner") {
+    return res.status(403).json({ message: "متاح لأصحاب الملاعب فقط" });
   }
   next();
 }
@@ -205,6 +237,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!valid) {
         return res.status(401).json({ message: "كلمة المرور غير صحيحة" });
       }
+      if (user.role === "owner") {
+        const bookings = await storage.getOwnerBookings(userId);
+        const upcoming = bookings.filter((b) => b.status === "upcoming");
+        if (upcoming.length > 0) {
+          return res.status(409).json({
+            message: `لا يمكن حذف الحساب — لديك ${upcoming.length} حجز قادم. يرجى إلغاء جميع الحجوزات أولاً`,
+          });
+        }
+      }
       await storage.softDeleteUser(userId);
       console.log(`[DELETE] User ${userId} soft-deleted`);
       return res.json({ message: "تم حذف الحساب بنجاح" });
@@ -309,6 +350,206 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiryMinutes: clampedExpiry,
         message: "تم إنشاء رمز المشرف المؤقت",
         permissions: ["view:bookings", "view:venues", "view:revenue", "view:support"],
+      });
+    } catch {
+      return res.status(500).json({ message: "خطأ في الخادم" });
+    }
+  });
+
+  // ─── Owner API ───────────────────────────────────────────────────────────
+
+  app.get("/api/owner/venue", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getAuthUserById(userId);
+      if (!user) return res.status(404).json({ message: "المستخدم غير موجود" });
+      return res.json(safeOwnerUser(user));
+    } catch {
+      return res.status(500).json({ message: "خطأ في الخادم" });
+    }
+  });
+
+  app.patch("/api/owner/venue", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { venueName, areaName, fieldSize, bookingPrice, hasBathrooms, hasMarket } =
+        req.body as any;
+      if (venueName) {
+        const existing = await storage.getAuthUserByVenueName(venueName);
+        if (existing && existing.id !== userId) {
+          return res.status(409).json({ message: "اسم الملعب مستخدم مسبقاً" });
+        }
+      }
+      const updates: any = {};
+      if (venueName !== undefined) updates.venueName = venueName;
+      if (areaName !== undefined) updates.areaName = areaName;
+      if (fieldSize !== undefined) updates.fieldSize = fieldSize;
+      if (bookingPrice !== undefined) updates.bookingPrice = bookingPrice;
+      if (hasBathrooms !== undefined) updates.hasBathrooms = hasBathrooms;
+      if (hasMarket !== undefined) updates.hasMarket = hasMarket;
+      await storage.updateAuthUser(userId, updates);
+      const user = await storage.getAuthUserById(userId);
+      return res.json({ message: "تم تحديث معلومات الملعب", venue: safeOwnerUser(user!) });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
+  app.get("/api/owner/bookings", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { filter } = req.query as { filter?: string };
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+      const monthStr = now.toISOString().slice(0, 7);
+      const yearStr = now.getFullYear().toString();
+      let bookings = await storage.getOwnerBookings(userId);
+      if (filter === "today") {
+        bookings = bookings.filter((b) => b.date === todayStr);
+      } else if (filter === "month") {
+        bookings = bookings.filter((b) => b.date.startsWith(monthStr));
+      } else if (filter === "year") {
+        bookings = bookings.filter((b) => b.date.startsWith(yearStr));
+      }
+      return res.json({ bookings });
+    } catch {
+      return res.status(500).json({ message: "خطأ في الخادم" });
+    }
+  });
+
+  app.post("/api/owner/bookings", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const user = await storage.getAuthUserById(userId);
+      if (!user) return res.status(404).json({ message: "المستخدم غير موجود" });
+      const { playerName, playerPhone, date, time, duration, price, source = "manual" } =
+        req.body as any;
+      if (!playerName?.trim() || !date || !time || !duration || price === undefined) {
+        return res.status(400).json({ message: "جميع الحقول مطلوبة" });
+      }
+      const allBookings = await storage.getOwnerBookings(userId);
+      const dayBookings = allBookings.filter((b) => b.date === date && b.status !== "cancelled");
+      const startHour = parseInt(time);
+      const endHour = startHour + Number(duration);
+      const conflict = dayBookings.find((b) => {
+        const bStart = parseInt(b.time.split(":")[0]);
+        const bEnd = bStart + b.duration;
+        return !(endHour <= bStart || startHour >= bEnd);
+      });
+      if (conflict) {
+        return res.status(409).json({
+          message: `يوجد تعارض مع حجز ${conflict.playerName} الساعة ${conflict.time}`,
+        });
+      }
+      const booking = await storage.createOwnerBooking({
+        ownerId: userId,
+        playerName: playerName.trim(),
+        playerPhone: playerPhone?.trim() ?? null,
+        date,
+        time: String(time).includes(":") ? time : `${String(time).padStart(2, "0")}:00`,
+        duration: Number(duration),
+        price: Number(price),
+        fieldSize: user.fieldSize ?? "5×5",
+        status: "upcoming",
+        source,
+      });
+      console.log(`[BOOKING] New booking by owner ${userId}: ${playerName} on ${date} at ${time}`);
+      return res.status(201).json({ message: "تم إضافة الحجز بنجاح", booking });
+    } catch (e: any) {
+      console.error("Create booking error:", e);
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
+  app.patch("/api/owner/bookings/:id", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const booking = await storage.getOwnerBookingById(id);
+      if (!booking) return res.status(404).json({ message: "الحجز غير موجود" });
+      if (booking.ownerId !== userId) return res.status(403).json({ message: "غير مصرح" });
+      const { playerName, playerPhone, date, time, duration, price, status } = req.body as any;
+      const updates: any = {};
+      if (playerName !== undefined) updates.playerName = playerName;
+      if (playerPhone !== undefined) updates.playerPhone = playerPhone;
+      if (date !== undefined) updates.date = date;
+      if (time !== undefined) updates.time = time;
+      if (duration !== undefined) updates.duration = Number(duration);
+      if (price !== undefined) updates.price = Number(price);
+      if (status !== undefined) updates.status = status;
+      const updated = await storage.updateOwnerBooking(id, updates);
+      return res.json({ message: "تم تحديث الحجز", booking: updated });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
+  app.delete("/api/owner/bookings/:id", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { id } = req.params;
+      const booking = await storage.getOwnerBookingById(id);
+      if (!booking) return res.status(404).json({ message: "الحجز غير موجود" });
+      if (booking.ownerId !== userId) return res.status(403).json({ message: "غير مصرح" });
+      await storage.cancelOwnerBooking(id);
+      return res.json({ message: "تم إلغاء الحجز" });
+    } catch {
+      return res.status(500).json({ message: "خطأ في الخادم" });
+    }
+  });
+
+  app.get("/api/owner/stats", authMiddleware, ownerGuard, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const allBookings = await storage.getOwnerBookings(userId);
+      const nonCancelled = allBookings.filter((b) => b.status !== "cancelled");
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0];
+      const monthStr = now.toISOString().slice(0, 7);
+      const appBookings = nonCancelled.filter((b) => b.source === "app");
+      const todayBookings = nonCancelled.filter((b) => b.date === todayStr);
+      const monthBookings = nonCancelled.filter((b) => b.date.startsWith(monthStr));
+      const totalRevenue = nonCancelled.reduce((sum, b) => sum + b.price * b.duration, 0);
+      const todayRevenue = todayBookings.reduce((sum, b) => sum + b.price * b.duration, 0);
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const totalAvailableHours = daysInMonth * 16;
+      const bookedHours = monthBookings.reduce((sum, b) => sum + b.duration, 0);
+      const occupancyRate =
+        totalAvailableHours > 0 ? Math.round((bookedHours / totalAvailableHours) * 100) : 0;
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split("T")[0];
+        const count = nonCancelled.filter((b) => b.date === dateStr).length;
+        const revenue = nonCancelled
+          .filter((b) => b.date === dateStr)
+          .reduce((sum, b) => sum + b.price * b.duration, 0);
+        last7Days.push({ date: dateStr, count, revenue });
+      }
+      const hourCounts: Record<number, number> = {};
+      for (const b of nonCancelled) {
+        const startHour = parseInt(b.time.split(":")[0]);
+        for (let h = 0; h < b.duration; h++) {
+          const hour = startHour + h;
+          if (hour <= 23) {
+            hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+          }
+        }
+      }
+      const peakHours = Array.from({ length: 16 }, (_, i) => ({
+        hour: i + 8,
+        count: hourCounts[i + 8] || 0,
+      }));
+      return res.json({
+        totalBookings: nonCancelled.length,
+        appBookings: appBookings.length,
+        totalRevenue,
+        todayBookings: todayBookings.length,
+        todayRevenue,
+        occupancyRate,
+        last7Days,
+        peakHours,
       });
     } catch {
       return res.status(500).json({ message: "خطأ في الخادم" });
