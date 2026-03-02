@@ -213,6 +213,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/user/phone/send-otp", authMiddleware, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { newPhone } = req.body as { newPhone: string };
+      if (!newPhone || newPhone.replace(/\D/g, "").length < 10) {
+        return res.status(400).json({ message: "رقم الهاتف غير صحيح" });
+      }
+      const existing = await storage.getAuthUserByPhone(newPhone.trim());
+      if (existing && existing.id !== userId) {
+        return res.status(409).json({ message: "هذا الرقم مسجل مسبقاً لدى حساب آخر" });
+      }
+      const otp = generateOtp();
+      await storage.storeOtp(`phone_change_${userId}_${newPhone.trim()}`, otp);
+      console.log(`[PHONE OTP] user=${userId} newPhone=${newPhone} otp=${otp}`);
+      return res.json({ message: "تم إرسال رمز التحقق إلى رقمك", devOtp: otp });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
+  app.patch("/api/user/phone", authMiddleware, async (req, res) => {
+    try {
+      const userId = (req as any).userId;
+      const { newPhone, otp } = req.body as { newPhone: string; otp: string };
+      if (!newPhone || !otp) {
+        return res.status(400).json({ message: "الرقم ورمز التحقق مطلوبان" });
+      }
+      const valid = await storage.verifyOtp(`phone_change_${userId}_${newPhone.trim()}`, otp.trim());
+      if (!valid) {
+        return res.status(400).json({ message: "رمز التحقق غير صحيح أو منتهي الصلاحية" });
+      }
+      const existing = await storage.getAuthUserByPhone(newPhone.trim());
+      if (existing && existing.id !== userId) {
+        return res.status(409).json({ message: "هذا الرقم مسجل مسبقاً لدى حساب آخر" });
+      }
+      await storage.updateAuthUser(userId, { phone: newPhone.trim() });
+      const user = await storage.getAuthUserById(userId);
+      console.log(`[PHONE UPDATE] user=${userId} newPhone=${newPhone}`);
+      return res.json({ message: "تم تحديث رقم الهاتف بنجاح", user: safeUser(user!) });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
   app.post("/api/support/message", authMiddleware, async (req, res) => {
     try {
       const userId = (req as any).userId;

@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 interface AuthInputProps extends TextInputProps {
   label: string;
@@ -19,6 +20,7 @@ interface AuthInputProps extends TextInputProps {
 }
 
 export function AuthInput({ label, icon, error, isPassword, ...rest }: AuthInputProps) {
+  const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -36,7 +38,10 @@ export function AuthInput({ label, icon, error, isPassword, ...rest }: AuthInput
 
   const borderColor = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [error ? Colors.destructive : Colors.border, error ? Colors.destructive : Colors.primary],
+    outputRange: [
+      error ? Colors.destructive : colors.border,
+      error ? Colors.destructive : Colors.primary,
+    ],
   });
 
   const shadowOpacity = glowAnim.interpolate({
@@ -46,12 +51,13 @@ export function AuthInput({ label, icon, error, isPassword, ...rest }: AuthInput
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
       <Animated.View
         style={[
           styles.inputContainer,
           {
             borderColor,
+            backgroundColor: colors.card,
             shadowColor: error ? Colors.destructive : Colors.primary,
             shadowOpacity,
             shadowRadius: 8,
@@ -60,21 +66,25 @@ export function AuthInput({ label, icon, error, isPassword, ...rest }: AuthInput
           },
         ]}
       >
-        <Ionicons name={icon} size={18} color={isFocused ? Colors.primary : Colors.textSecondary} />
+        <Ionicons
+          name={icon}
+          size={18}
+          color={isFocused ? Colors.primary : colors.textSecondary}
+        />
         <TextInput
           {...rest}
-          style={styles.input}
-          placeholderTextColor={Colors.textTertiary}
+          style={[styles.input, { color: colors.text }]}
+          placeholderTextColor={colors.textTertiary}
           secureTextEntry={isPassword && !showPassword}
           onFocus={handleFocus}
           onBlur={handleBlur}
         />
         {isPassword && (
-          <Pressable onPress={() => setShowPassword(v => !v)}>
+          <Pressable onPress={() => setShowPassword((v) => !v)}>
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={18}
-              color={Colors.textSecondary}
+              color={colors.textSecondary}
             />
           </Pressable>
         )}
@@ -85,18 +95,11 @@ export function AuthInput({ label, icon, error, isPassword, ...rest }: AuthInput
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: 6,
-  },
-  label: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontFamily: "Cairo_600SemiBold",
-  },
+  wrapper: { gap: 6 },
+  label: { fontSize: 13, fontFamily: "Cairo_600SemiBold" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.card,
     borderRadius: 14,
     borderWidth: 1.5,
     paddingHorizontal: 14,
@@ -105,7 +108,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: Colors.text,
     fontFamily: "Cairo_400Regular",
     fontSize: 15,
     textAlign: "right",

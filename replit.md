@@ -12,7 +12,8 @@ Key features include:
 - 1-Click rebook system for repeating past bookings
 - Animated splash screen with football animation
 - Full RTL (right-to-left) Arabic UI
-- Dark mode only interface with neon green (#2ECC71) accent
+- Global dark/light mode with smooth transitions — persisted via AsyncStorage, applied to all screens and components
+- Arabic (RTL) / English (LTR) language switcher — global, tab labels + all screen text translate; Kurdish removed
 - Auto-sliding ad banner on home screen (190px, FlatList with pagingEnabled)
 - Map/List toggle in Search tab (native MapView on iOS/Android, web fallback)
 - Store tab (coming-soon page with pulsing placeholder)
@@ -42,7 +43,9 @@ The app uses file-based routing under the `app/` directory:
 **Navigation:** Expo Router with tab-based navigation. On iOS with Liquid Glass support it uses `NativeTabs` from `expo-router/unstable-native-tabs`; on other platforms it falls back to a standard `Tabs` component with a BlurView tab bar.
 
 **State Management:**
-- `context/AuthContext.tsx` – Authentication state (user, token, guest mode), persisted via AsyncStorage; `UserRole` includes supervisor
+- `context/AuthContext.tsx` – Authentication state (user, token, guest mode), persisted via AsyncStorage; `UserRole` includes supervisor; exposes `sendPhoneChangeOtp` and `updatePhone` for phone number change with OTP verification
+- `context/ThemeContext.tsx` – Global dark/light mode via `useTheme()` → `{ isDark, colors, toggleTheme }`; `getColors(isDark)` used by all screens/components
+- `context/LanguageContext.tsx` – Arabic/English only (Kurdish removed); `useLang()` → `{ language, setLanguage, t, isRTL }`; tab labels and all screen text use `t(key)`
 - `context/BookingsContext.tsx` – Bookings and venues state, persisted via AsyncStorage
 - `context/LocationContext.tsx` – Device GPS (expo-location), falls back to Mosul (36.335, 43.119)
 - TanStack React Query for server data fetching

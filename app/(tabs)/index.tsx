@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useBookings, formatPrice, MOCK_VENUES } from "@/context/BookingsContext";
 import { VenueCard } from "@/components/VenueCard";
 import { SkeletonVenueCard } from "@/components/SkeletonCard";
@@ -195,6 +196,7 @@ function AdsBanner() {
 }
 
 function LiveCounter() {
+  const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -209,13 +211,13 @@ function LiveCounter() {
   }, []);
 
   return (
-    <View style={styles.liveCard}>
+    <View style={[styles.liveCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]}>
         <View style={styles.liveDotInner} />
       </Animated.View>
       <View style={styles.liveTextBlock}>
         <Text style={styles.liveNumber}>27</Text>
-        <Text style={styles.liveLabel}>مباراة جارية الآن في الموصل</Text>
+        <Text style={[styles.liveLabel, { color: colors.textSecondary }]}>مباراة جارية الآن في الموصل</Text>
       </View>
       <Ionicons name="flame" size={22} color={Colors.warning} />
     </View>
@@ -268,13 +270,14 @@ function RebookCard() {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { isLoading } = useBookings();
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
+    <View style={[styles.container, { paddingTop: topPadding, backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPadding + 110 }]}
@@ -282,12 +285,12 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>أهلًا بك</Text>
-            <Text style={styles.headerTitle}>اختر ملعبك</Text>
+            <Text style={[styles.greeting, { color: colors.textSecondary }]}>أهلًا بك</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>اختر ملعبك</Text>
           </View>
-          <Pressable style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={22} color={Colors.text} />
-            <View style={styles.notifDot} />
+          <Pressable style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="notifications-outline" size={22} color={colors.text} />
+            <View style={[styles.notifDot, { borderColor: colors.background }]} />
           </Pressable>
         </View>
 
@@ -298,7 +301,7 @@ export default function HomeScreen() {
         <RebookCard />
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>الملاعب القريبة</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>الملاعب القريبة</Text>
           <Pressable onPress={() => router.push("/(tabs)/search")}>
             <Text style={styles.seeAll}>عرض الكل</Text>
           </Pressable>

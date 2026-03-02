@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 interface GuestModalProps {
   visible: boolean;
@@ -17,6 +18,7 @@ interface GuestModalProps {
 }
 
 export function GuestModal({ visible, onClose }: GuestModalProps) {
+  const { colors } = useTheme();
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -61,16 +63,23 @@ export function GuestModal({ visible, onClose }: GuestModalProps) {
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
-          style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
+          style={[
+            styles.sheet,
+            {
+              transform: [{ translateY: slideAnim }],
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
         >
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
 
           <View style={styles.iconCircle}>
             <Ionicons name="lock-closed" size={28} color={Colors.primary} />
           </View>
 
-          <Text style={styles.title}>سجّل حسابك للحجز</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>سجّل حسابك للحجز</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             المتابعة كضيف تتيح لك التصفح فقط.{"\n"}
             سجّل دخولك لتحجز ملعبك وتستمتع بالمباريات.
           </Text>
@@ -84,7 +93,7 @@ export function GuestModal({ visible, onClose }: GuestModalProps) {
             ].map((f) => (
               <View key={f.text} style={styles.featureRow}>
                 <Ionicons name={f.icon as any} size={16} color={Colors.primary} />
-                <Text style={styles.featureText}>{f.text}</Text>
+                <Text style={[styles.featureText, { color: colors.text }]}>{f.text}</Text>
               </View>
             ))}
           </View>
@@ -101,7 +110,7 @@ export function GuestModal({ visible, onClose }: GuestModalProps) {
           </Pressable>
 
           <Pressable style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelText}>متابعة كضيف</Text>
+            <Text style={[styles.cancelText, { color: colors.textSecondary }]}>متابعة كضيف</Text>
           </Pressable>
         </Animated.View>
       </Animated.View>
@@ -116,7 +125,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 24,
@@ -124,13 +132,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
     borderTopWidth: 1,
-    borderColor: Colors.border,
   },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border,
     marginBottom: 8,
   },
   iconCircle: {
@@ -143,34 +149,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {
-    color: Colors.text,
-    fontSize: 20,
-    fontFamily: "Cairo_700Bold",
-    textAlign: "center",
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontFamily: "Cairo_400Regular",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  features: {
-    width: "100%",
-    gap: 10,
-    paddingHorizontal: 8,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  featureText: {
-    color: Colors.text,
-    fontSize: 14,
-    fontFamily: "Cairo_400Regular",
-  },
+  title: { fontSize: 20, fontFamily: "Cairo_700Bold", textAlign: "center" },
+  subtitle: { fontSize: 14, fontFamily: "Cairo_400Regular", textAlign: "center", lineHeight: 22 },
+  features: { width: "100%", gap: 10, paddingHorizontal: 8 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  featureText: { fontSize: 14, fontFamily: "Cairo_400Regular" },
   loginBtn: {
     width: "100%",
     flexDirection: "row",
@@ -182,17 +165,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     marginTop: 4,
   },
-  loginBtnText: {
-    color: "#000",
-    fontSize: 15,
-    fontFamily: "Cairo_700Bold",
-  },
-  cancelBtn: {
-    paddingVertical: 8,
-  },
-  cancelText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontFamily: "Cairo_400Regular",
-  },
+  loginBtnText: { color: "#000", fontSize: 15, fontFamily: "Cairo_700Bold" },
+  cancelBtn: { paddingVertical: 8 },
+  cancelText: { fontSize: 14, fontFamily: "Cairo_400Regular" },
 });

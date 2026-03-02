@@ -25,7 +25,7 @@ export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLang();
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, sendPhoneChangeOtp, updatePhone } = useAuth();
 
   const [name, setName] = useState(user?.name ?? "");
   const [dateOfBirth, setDateOfBirth] = useState(user?.dateOfBirth ?? "");
@@ -33,6 +33,59 @@ export default function EditProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [nameError, setNameError] = useState("");
+
+  const [newPhone, setNewPhone] = useState(user?.phone ?? "");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [phoneSuccess, setPhoneSuccess] = useState("");
+  const [devOtpHint, setDevOtpHint] = useState("");
+
+  const phoneChanged = newPhone.trim() !== (user?.phone ?? "");
+
+  const handleSendPhoneOtp = async () => {
+    if (newPhone.replace(/\D/g, "").length < 10) {
+      setOtpError(t("fieldRequired"));
+      return;
+    }
+    setOtpError("");
+    setIsSendingOtp(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const res = await sendPhoneChangeOtp(newPhone.trim());
+      setOtpSent(true);
+      setOtp("");
+      if (res.devOtp) setDevOtpHint(res.devOtp);
+    } catch (e: any) {
+      setOtpError(e?.message ?? "تعذر إرسال رمز التحقق");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyPhone = async () => {
+    if (otp.trim().length !== 6) {
+      setOtpError("أدخل رمز من 6 أرقام");
+      return;
+    }
+    setOtpError("");
+    setIsVerifyingOtp(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await updatePhone(newPhone.trim(), otp.trim());
+      setOtpSent(false);
+      setOtp("");
+      setDevOtpHint("");
+      setPhoneSuccess(t("phoneUpdated"));
+      setTimeout(() => setPhoneSuccess(""), 4000);
+    } catch (e: any) {
+      setOtpError(e?.message ?? "رمز التحقق غير صحيح");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
@@ -174,19 +227,97 @@ export default function EditProfileScreen() {
 
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>{t("phone")}</Text>
-            <View
-              style={[
-                styles.input,
-                styles.inputLocked,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.inputLockedText, { color: colors.textSecondary }]}>
-                {user?.phone ?? "—"}
-              </Text>
-              <Ionicons name="lock-closed" size={14} color={colors.textTertiary} />
+            <View style={styles.phoneRow}>
+              <TextInput
+                style={[
+                  styles.phoneInput,
+                  {
+                    backgroundColor: colors.inputBg,
+                    color: colors.text,
+                    borderColor: otpError && !otpSent ? Colors.destructive : colors.border,
+                  },
+                ]}
+                value={newPhone}
+                onChangeText={(v) => {
+                  setNewPhone(v);
+                  setOtpSent(false);
+                  setOtp("");
+                  setOtpError("");
+                  setPhoneSuccess("");
+                }}
+                placeholder={t("phone")}
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="phone-pad"
+                textAlign="right"
+                editable={!otpSent}
+              />
+              {phoneChanged && !otpSent && (
+                <Pressable
+                  style={[
+                    styles.otpSendBtn,
+                    isSendingOtp && { opacity: 0.5 },
+                  ]}
+                  onPress={handleSendPhoneOtp}
+                  disabled={isSendingOtp}
+                >
+                  {isSendingOtp ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.otpSendBtnText}>{t("sendOtp")}</Text>
+                  )}
+                </Pressable>
+              )}
             </View>
-            <Text style={[styles.lockedNote, { color: colors.textTertiary }]}>{t("phoneLocked")}</Text>
+
+            {otpSent && (
+              <View style={styles.otpSection}>
+                {!!devOtpHint && (
+                  <View style={styles.devHint}>
+                    <Text style={styles.devHintText}>🔐 Dev OTP: {devOtpHint}</Text>
+                  </View>
+                )}
+                <TextInput
+                  style={[
+                    styles.otpInput,
+                    {
+                      backgroundColor: colors.inputBg,
+                      color: colors.text,
+                      borderColor: otpError ? Colors.destructive : colors.border,
+                    },
+                  ]}
+                  value={otp}
+                  onChangeText={(v) => { setOtp(v); setOtpError(""); }}
+                  placeholder={t("otpPlaceholder")}
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  textAlign="center"
+                />
+                <Pressable
+                  style={[styles.verifyBtn, isVerifyingOtp && { opacity: 0.5 }]}
+                  onPress={handleVerifyPhone}
+                  disabled={isVerifyingOtp}
+                >
+                  {isVerifyingOtp ? (
+                    <ActivityIndicator size="small" color="#000" />
+                  ) : (
+                    <Text style={styles.verifyBtnText}>{t("verifyOtp")}</Text>
+                  )}
+                </Pressable>
+                <Pressable onPress={() => { setOtpSent(false); setOtpError(""); }}>
+                  <Text style={[styles.resendText, { color: colors.textTertiary }]}>
+                    تغيير الرقم
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {!!otpError && (
+              <Text style={[styles.errorText, { color: Colors.destructive }]}>{otpError}</Text>
+            )}
+            {!!phoneSuccess && (
+              <Text style={[styles.successText, { color: Colors.primary }]}>{phoneSuccess}</Text>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -260,13 +391,56 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Cairo_400Regular",
   },
-  inputLocked: {
+  phoneRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
+    gap: 8,
   },
-  inputLockedText: { fontSize: 15, fontFamily: "Cairo_400Regular" },
-  lockedNote: { fontSize: 11, fontFamily: "Cairo_400Regular" },
+  phoneInput: {
+    flex: 1,
+    height: 52,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: "Cairo_400Regular",
+  },
+  otpSendBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 90,
+  },
+  otpSendBtnText: { color: "#000", fontSize: 12, fontFamily: "Cairo_700Bold" },
+  otpSection: { gap: 10, marginTop: 4 },
+  devHint: {
+    backgroundColor: "rgba(46,204,113,0.1)",
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "rgba(46,204,113,0.3)",
+  },
+  devHintText: { color: Colors.primary, fontSize: 12, fontFamily: "Cairo_600SemiBold", textAlign: "center" },
+  otpInput: {
+    height: 52,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    fontSize: 22,
+    fontFamily: "Cairo_700Bold",
+    letterSpacing: 8,
+  },
+  verifyBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verifyBtnText: { color: "#000", fontSize: 14, fontFamily: "Cairo_700Bold" },
+  resendText: { fontSize: 12, fontFamily: "Cairo_400Regular", textAlign: "center" },
   errorText: { fontSize: 12, fontFamily: "Cairo_400Regular" },
 });

@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { useBookings, Booking, formatDate, formatPrice } from "@/context/BookingsContext";
 import { useAuth } from "@/context/AuthContext";
 import { GuestModal } from "@/components/GuestModal";
@@ -20,6 +21,7 @@ import { GuestModal } from "@/components/GuestModal";
 const TABS = ["القادمة", "المكتملة", "الملغاة"];
 
 function BookingCard({ booking }: { booking: Booking }) {
+  const { colors } = useTheme();
   const { cancelBooking } = useBookings();
 
   const statusColor = {
@@ -58,6 +60,7 @@ function BookingCard({ booking }: { booking: Booking }) {
     <Pressable
       style={({ pressed }) => [
         styles.bookingCard,
+        { backgroundColor: colors.card, borderColor: colors.border },
         pressed && { opacity: 0.9 },
       ]}
       onPress={() => router.push({ pathname: "/booking/[id]", params: { id: booking.id } })}
@@ -70,25 +73,25 @@ function BookingCard({ booking }: { booking: Booking }) {
         <Text style={styles.dateText}>{formatDate(booking.date)}</Text>
       </View>
 
-      <Text style={styles.venueName}>{booking.venueName}</Text>
+      <Text style={[styles.venueName, { color: colors.text }]}>{booking.venueName}</Text>
 
       <View style={styles.detailsRow}>
         <View style={styles.detailItem}>
-          <Ionicons name="football-outline" size={13} color={Colors.textSecondary} />
-          <Text style={styles.detailText}>{booking.fieldSize}</Text>
+          <Ionicons name="football-outline" size={13} color={colors.textSecondary} />
+          <Text style={[styles.detailText, { color: colors.textSecondary }]}>{booking.fieldSize}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
-          <Text style={styles.detailText}>{booking.time}</Text>
+          <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
+          <Text style={[styles.detailText, { color: colors.textSecondary }]}>{booking.time}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Ionicons name="people-outline" size={13} color={Colors.textSecondary} />
-          <Text style={styles.detailText}>{booking.players.length} لاعب</Text>
+          <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
+          <Text style={[styles.detailText, { color: colors.textSecondary }]}>{booking.players.length} لاعب</Text>
         </View>
       </View>
 
       <View style={styles.cardBottom}>
-        <Text style={styles.price}>{formatPrice(booking.price)}</Text>
+        <Text style={[styles.price, { color: colors.text }]}>{formatPrice(booking.price)}</Text>
         {booking.status === "upcoming" && (
           <View style={styles.actionRow}>
             <Pressable style={styles.detailsBtn} onPress={() => router.push({ pathname: "/booking/[id]", params: { id: booking.id } })}>
@@ -107,6 +110,7 @@ function BookingCard({ booking }: { booking: Booking }) {
 
 export default function BookingsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { bookings, isLoading } = useBookings();
   const { isGuest } = useAuth();
   const [activeTab, setActiveTab] = useState("القادمة");
@@ -123,9 +127,9 @@ export default function BookingsScreen() {
   });
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
+    <View style={[styles.container, { paddingTop: topPadding, backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>حجوزاتي</Text>
+        <Text style={[styles.title, { color: colors.text }]}>حجوزاتي</Text>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{isGuest ? 0 : bookings.filter(b => b.status === "upcoming").length}</Text>
         </View>

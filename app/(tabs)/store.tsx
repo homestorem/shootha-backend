@@ -9,8 +9,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { useLang } from "@/context/LanguageContext";
 
 function PulseText({ text }: { text: string }) {
+  const { colors } = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -25,7 +28,9 @@ function PulseText({ text }: { text: string }) {
   }, []);
 
   return (
-    <Animated.Text style={[styles.comingSoon, { transform: [{ scale: pulse }] }]}>
+    <Animated.Text
+      style={[styles.comingSoon, { color: colors.primary, transform: [{ scale: pulse }] }]}
+    >
       {text}
     </Animated.Text>
   );
@@ -33,40 +38,51 @@ function PulseText({ text }: { text: string }) {
 
 export default function StoreScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { t } = useLang();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding, paddingBottom: bottomPadding }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: topPadding, paddingBottom: bottomPadding, backgroundColor: colors.background },
+      ]}
+    >
       <View style={styles.content}>
         <View style={styles.iconWrap}>
           <Ionicons name="bag-handle" size={52} color={Colors.primary} />
         </View>
 
         <View style={styles.titleBlock}>
-          <Text style={styles.title}>المتجر</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("storeTab")}</Text>
           <View style={styles.underline} />
         </View>
 
-        <PulseText text="قريباً..." />
+        <PulseText text={t("comingSoon")} />
 
-        <Text style={styles.description}>
-          سيتم إطلاق متجر المنتجات الرياضية قريباً داخل تطبيق Shoot'ha
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
+          {t("storeDesc")}
         </Text>
 
         <View style={styles.placeholders}>
-          <View style={styles.placeholderRow}>
-            <Ionicons name="shirt-outline" size={20} color={Colors.textTertiary} />
-            <Text style={styles.placeholderText}>منتجات رياضية</Text>
-          </View>
-          <View style={styles.placeholderRow}>
-            <Ionicons name="cart-outline" size={20} color={Colors.textTertiary} />
-            <Text style={styles.placeholderText}>سلة التسوق</Text>
-          </View>
-          <View style={styles.placeholderRow}>
-            <Ionicons name="pricetag-outline" size={20} color={Colors.textTertiary} />
-            <Text style={styles.placeholderText}>عروض وخصومات</Text>
-          </View>
+          {[
+            { icon: "shirt-outline", label: "منتجات رياضية" },
+            { icon: "cart-outline", label: "سلة التسوق" },
+            { icon: "pricetag-outline", label: "عروض وخصومات" },
+          ].map(({ icon, label }) => (
+            <View
+              key={icon}
+              style={[
+                styles.placeholderRow,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Ionicons name={icon as any} size={20} color={colors.textTertiary} />
+              <Text style={[styles.placeholderText, { color: colors.textTertiary }]}>{label}</Text>
+            </View>
+          ))}
         </View>
       </View>
     </View>
@@ -76,7 +92,6 @@ export default function StoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -96,12 +111,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  titleBlock: {
-    alignItems: "center",
-    gap: 6,
-  },
+  titleBlock: { alignItems: "center", gap: 6 },
   title: {
-    color: Colors.text,
     fontSize: 36,
     fontFamily: "Cairo_700Bold",
     textAlign: "center",
@@ -113,13 +124,11 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   comingSoon: {
-    color: Colors.primary,
     fontSize: 24,
     fontFamily: "Cairo_700Bold",
     textAlign: "center",
   },
   description: {
-    color: Colors.textSecondary,
     fontSize: 14,
     fontFamily: "Cairo_400Regular",
     textAlign: "center",
@@ -134,16 +143,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: Colors.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: 18,
     paddingVertical: 14,
     justifyContent: "flex-end",
   },
   placeholderText: {
-    color: Colors.textTertiary,
     fontSize: 14,
     fontFamily: "Cairo_400Regular",
   },

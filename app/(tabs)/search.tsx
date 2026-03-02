@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { MOCK_VENUES } from "@/context/BookingsContext";
 import { VenueCard } from "@/components/VenueCard";
 import SearchMapView from "@/components/SearchMapView";
@@ -20,6 +21,7 @@ const SORT_OPTIONS = ["الأعلى تقييمًا", "الأقل سعرًا", "�
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("الكل");
   const [sortBy, setSortBy] = useState("الأعلى تقييمًا");
@@ -57,11 +59,11 @@ export default function SearchScreen() {
   }, [query, activeFilter, sortBy]);
 
   return (
-    <View style={[styles.container, { paddingTop: topPadding }]}>
+    <View style={[styles.container, { paddingTop: topPadding, backgroundColor: colors.background }]}>
       <View style={styles.headerSection}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>استكشاف الملاعب</Text>
-          <View style={styles.viewToggle}>
+          <Text style={[styles.title, { color: colors.text }]}>استكشاف الملاعب</Text>
+          <View style={[styles.viewToggle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Pressable
               style={[styles.toggleBtn, viewMode === "list" && styles.toggleBtnActive]}
               onPress={() => setViewMode("list")}
@@ -91,18 +93,18 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={Colors.textSecondary} />
+        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="ابحث عن ملعب أو حي..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={setQuery}
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery("")}>
-              <Ionicons name="close-circle" size={18} color={Colors.textSecondary} />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -142,7 +144,7 @@ export default function SearchScreen() {
           </View>
 
           {showSort && (
-            <View style={styles.sortDropdown}>
+            <View style={[styles.sortDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {SORT_OPTIONS.map(opt => (
                 <Pressable
                   key={opt}
@@ -160,9 +162,9 @@ export default function SearchScreen() {
 
           {filtered.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={48} color={Colors.textTertiary} />
-              <Text style={styles.emptyTitle}>لا توجد نتائج</Text>
-              <Text style={styles.emptyText}>جرّب البحث بكلمة مختلفة أو تغيير الفلتر</Text>
+              <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد نتائج</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>جرّب البحث بكلمة مختلفة أو تغيير الفلتر</Text>
             </View>
           ) : (
             filtered.map(venue => <VenueCard key={venue.id} venue={venue} />)

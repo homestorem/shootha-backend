@@ -4,30 +4,32 @@ import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
 import React from "react";
-import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { useLang } from "@/context/LanguageContext";
 
 function NativeTabLayout() {
+  const { t } = useLang();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>الرئيسية</Label>
+        <Label>{t("homeTab")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="search">
         <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
-        <Label>استكشاف</Label>
+        <Label>{t("searchTab")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="store">
         <Icon sf={{ default: "bag", selected: "bag.fill" }} />
-        <Label>المتجر</Label>
+        <Label>{t("storeTab")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="bookings">
         <Icon sf={{ default: "calendar", selected: "calendar" }} />
-        <Label>حجوزاتي</Label>
+        <Label>{t("bookingsTab")}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>حسابي</Label>
+        <Label>{t("profileTab")}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -36,18 +38,20 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const { colors, isDark } = useTheme();
+  const { t } = useLang();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : Colors.tabBar,
+          backgroundColor: isIOS ? "transparent" : colors.tabBar,
           borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: Colors.border,
+          borderTopColor: colors.border,
           elevation: 0,
           ...(isWeb ? { height: 84 } : {}),
         },
@@ -55,11 +59,11 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={80}
-              tint="dark"
+              tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: Colors.tabBar }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.tabBar }]} />
           ) : null,
         tabBarLabelStyle: {
           fontFamily: "Cairo_400Regular",
@@ -70,7 +74,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "الرئيسية",
+          title: t("homeTab"),
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="home" size={size} color={color} />;
@@ -80,7 +84,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: "استكشاف",
+          title: t("searchTab"),
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="search" size={size} color={color} />;
@@ -90,7 +94,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="store"
         options={{
-          title: "المتجر",
+          title: t("storeTab"),
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="bag-handle" size={size} color={color} />;
@@ -100,7 +104,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="bookings"
         options={{
-          title: "حجوزاتي",
+          title: t("bookingsTab"),
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="calendar" size={size} color={color} />;
@@ -110,7 +114,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "حسابي",
+          title: t("profileTab"),
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="person" size={size} color={color} />;

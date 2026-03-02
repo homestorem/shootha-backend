@@ -36,7 +36,6 @@ function LanguagePickerModal({
   const options: { key: Language; label: string }[] = [
     { key: "ar", label: "العربية" },
     { key: "en", label: "English" },
-    { key: "ku", label: "کوردی" },
   ];
 
   const handleSelect = async (lang: Language) => {
@@ -323,12 +322,7 @@ export default function ProfileScreen() {
     ? "shield-checkmark"
     : "football";
 
-  const langLabel =
-    language === "ar"
-      ? t("arabic")
-      : language === "en"
-      ? t("english")
-      : t("kurdish");
+  const langLabel = language === "ar" ? t("arabic") : t("english");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPadding }]}>

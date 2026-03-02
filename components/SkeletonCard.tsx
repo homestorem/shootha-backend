@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View, ViewStyle } from "react-native";
-import { Colors } from "@/constants/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 interface SkeletonCardProps {
   height?: number;
@@ -9,21 +9,14 @@ interface SkeletonCardProps {
 }
 
 export function SkeletonCard({ height = 120, borderRadius = 16, style }: SkeletonCardProps) {
+  const { colors } = useTheme();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 900,
-          useNativeDriver: true,
-        }),
+        Animated.timing(shimmerAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: 900, useNativeDriver: true }),
       ])
     );
     loop.start();
@@ -38,8 +31,7 @@ export function SkeletonCard({ height = 120, borderRadius = 16, style }: Skeleto
   return (
     <Animated.View
       style={[
-        styles.base,
-        { height, borderRadius, opacity },
+        { backgroundColor: colors.shimmer2, height, borderRadius, opacity },
         style,
       ]}
     />
@@ -47,8 +39,9 @@ export function SkeletonCard({ height = 120, borderRadius = 16, style }: Skeleto
 }
 
 export function SkeletonVenueCard() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.venueCard}>
+    <View style={[styles.venueCard, { backgroundColor: colors.card }]}>
       <SkeletonCard height={160} borderRadius={16} style={styles.imageArea} />
       <View style={styles.textArea}>
         <SkeletonCard height={16} borderRadius={8} style={{ width: "60%" }} />
@@ -60,22 +53,12 @@ export function SkeletonVenueCard() {
 }
 
 const styles = StyleSheet.create({
-  base: {
-    backgroundColor: Colors.shimmer2,
-  },
   venueCard: {
     marginHorizontal: 20,
     marginBottom: 16,
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: Colors.card,
   },
-  imageArea: {
-    width: "100%",
-    borderRadius: 0,
-  },
-  textArea: {
-    padding: 14,
-    gap: 4,
-  },
+  imageArea: { width: "100%", borderRadius: 0 },
+  textArea: { padding: 14, gap: 4 },
 });

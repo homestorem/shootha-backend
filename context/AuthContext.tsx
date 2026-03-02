@@ -71,6 +71,8 @@ interface AuthContextValue {
     profileImage?: string;
   }) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
+  sendPhoneChangeOtp: (newPhone: string) => Promise<{ devOtp?: string }>;
+  updatePhone: (newPhone: string, otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -216,6 +218,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logout();
   };
 
+  const sendPhoneChangeOtp = async (newPhone: string): Promise<{ devOtp?: string }> => {
+    const res = await authFetch("POST", "/api/user/phone/send-otp", { newPhone });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message ?? "تعذر إرسال رمز التحقق");
+    }
+    return res.json();
+  };
+
+  const updatePhone = async (newPhone: string, otp: string): Promise<void> => {
+    const res = await authFetch("PATCH", "/api/user/phone", { newPhone, otp });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message ?? "تعذر تحديث رقم الهاتف");
+    }
+    const body: { user: AuthUser } = await res.json();
+    const updatedUser = { ...user!, ...body.user };
+    setUser(updatedUser);
+    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser));
+  };
+
   const isAuthenticated = !!user && !isGuest;
 
   const value = useMemo(
@@ -232,6 +255,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       updateProfile,
       deleteAccount,
+      sendPhoneChangeOtp,
+      updatePhone,
     }),
     [user, token, isGuest, isLoading]
   );
