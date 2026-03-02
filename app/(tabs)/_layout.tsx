@@ -17,6 +17,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
         <Label>استكشاف</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>الخريطة</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="bookings">
         <Icon sf={{ default: "calendar", selected: "calendar.fill" }} />
         <Label>حجوزاتي</Label>
@@ -80,6 +84,16 @@ function ClassicTabLayout() {
           tabBarIcon: ({ color, size }) => {
             const { Ionicons } = require("@expo/vector-icons");
             return <Ionicons name="search" size={size} color={color} />;
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "الخريطة",
+          tabBarIcon: ({ color, size }) => {
+            const { Ionicons } = require("@expo/vector-icons");
+            return <Ionicons name="map" size={size} color={color} />;
           },
         }}
       />

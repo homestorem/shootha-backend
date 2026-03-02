@@ -7,33 +7,95 @@ import {
   Pressable,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/colors";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, PENDING_REG_KEY, PendingPlayerData } from "@/context/AuthContext";
 import { AuthInput } from "@/components/AuthInput";
 
 export default function PlayerRegisterScreen() {
   const insets = useSafeAreaInsets();
   const { sendOtp } = useAuth();
+
   const [name, setName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+
   const [nameError, setNameError] = useState("");
+  const [dobError, setDobError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("الإذن مطلوب", "نحتاج إذن الوصول إلى معرض الصور");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setProfileImageUri(result.assets[0].uri);
+    }
+  };
+
   const validate = () => {
     let valid = true;
-    if (!name.trim()) { setNameError("الاسم مطلوب"); valid = false; }
-    else setNameError("");
-    if (!phone.trim()) { setPhoneError("رقم الهاتف مطلوب"); valid = false; }
-    else if (phone.replace(/\D/g, "").length < 10) { setPhoneError("رقم الهاتف غير صحيح"); valid = false; }
-    else setPhoneError("");
+
+    if (!name.trim()) {
+      setNameError("الاسم الكامل مطلوب");
+      valid = false;
+    } else setNameError("");
+
+    if (!dateOfBirth.trim()) {
+      setDobError("تاريخ الميلاد مطلوب");
+      valid = false;
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth.trim())) {
+      setDobError("الصيغة الصحيحة: YYYY-MM-DD");
+      valid = false;
+    } else setDobError("");
+
+    if (!phone.trim()) {
+      setPhoneError("رقم الهاتف مطلوب");
+      valid = false;
+    } else if (phone.replace(/\D/g, "").length < 10) {
+      setPhoneError("رقم الهاتف غير صحيح");
+      valid = false;
+    } else setPhoneError("");
+
+    if (!password.trim()) {
+      setPasswordError("كلمة المرور مطلوبة");
+      valid = false;
+    } else if (password.length < 6) {
+      setPasswordError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      valid = false;
+    } else setPasswordError("");
+
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError("تأكيد كلمة المرور مطلوب");
+      valid = false;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError("كلمتا المرور غير متطابقتين");
+      valid = false;
+    } else setConfirmPasswordError("");
+
     return valid;
   };
 
@@ -42,12 +104,20 @@ export default function PlayerRegisterScreen() {
     setIsLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      const pendingData: PendingPlayerData = {
+        name: name.trim(),
+        phone: phone.trim(),
+        password,
+        dateOfBirth: dateOfBirth.trim(),
+        profileImage: profileImageUri ?? undefined,
+      };
+      await AsyncStorage.setItem(PENDING_REG_KEY, JSON.stringify(pendingData));
+
       const res = await sendOtp(phone.trim());
       router.push({
         pathname: "/auth/player/verify-otp",
         params: {
           phone: phone.trim(),
-          name: name.trim(),
           mode: "register",
           role: "player",
           devOtp: res.devOtp ?? "",
@@ -90,6 +160,17 @@ export default function PlayerRegisterScreen() {
             onChangeText={(v) => { setName(v); setNameError(""); }}
             error={nameError}
           />
+
+          <AuthInput
+            label="تاريخ الميلاد"
+            icon="calendar-outline"
+            placeholder="YYYY-MM-DD"
+            value={dateOfBirth}
+            onChangeText={(v) => { setDateOfBirth(v); setDobError(""); }}
+            keyboardType="numbers-and-punctuation"
+            error={dobError}
+          />
+
           <AuthInput
             label="رقم الهاتف"
             icon="call-outline"
@@ -99,6 +180,45 @@ export default function PlayerRegisterScreen() {
             keyboardType="phone-pad"
             error={phoneError}
           />
+
+          <AuthInput
+            label="كلمة المرور"
+            icon="lock-closed-outline"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={(v) => { setPassword(v); setPasswordError(""); }}
+            isPassword
+            error={passwordError}
+          />
+
+          <AuthInput
+            label="تأكيد كلمة المرور"
+            icon="lock-closed-outline"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChangeText={(v) => { setConfirmPassword(v); setConfirmPasswordError(""); }}
+            isPassword
+            error={confirmPasswordError}
+          />
+
+          <View style={styles.imageSection}>
+            <Text style={styles.imageLabel}>صورة الملف الشخصي (اختياري)</Text>
+            <Pressable style={styles.imagePicker} onPress={pickImage}>
+              {profileImageUri ? (
+                <Image source={{ uri: profileImageUri }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Ionicons name="camera-outline" size={28} color={Colors.textSecondary} />
+                  <Text style={styles.imagePlaceholderText}>اختر صورة</Text>
+                </View>
+              )}
+            </Pressable>
+            {profileImageUri && (
+              <Pressable onPress={() => setProfileImageUri(null)}>
+                <Text style={styles.removeImageText}>إزالة الصورة</Text>
+              </Pressable>
+            )}
+          </View>
 
           <Pressable
             style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
@@ -131,7 +251,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card, alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: Colors.border,
   },
-  content: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40, gap: 0 },
+  content: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
   heroSection: { alignItems: "center", gap: 12, marginBottom: 36 },
   roleIcon: {
     width: 72, height: 72, borderRadius: 36,
@@ -142,6 +262,20 @@ const styles = StyleSheet.create({
   title: { color: Colors.text, fontSize: 24, fontFamily: "Cairo_700Bold", textAlign: "center" },
   subtitle: { color: Colors.textSecondary, fontSize: 14, fontFamily: "Cairo_400Regular", textAlign: "center" },
   form: { gap: 16, marginBottom: 24 },
+  imageSection: { gap: 8, alignItems: "center" },
+  imageLabel: { color: Colors.textSecondary, fontSize: 13, fontFamily: "Cairo_600SemiBold", alignSelf: "flex-start" },
+  imagePicker: {
+    width: 100, height: 100, borderRadius: 50,
+    overflow: "hidden", borderWidth: 2, borderColor: Colors.border,
+    borderStyle: "dashed",
+  },
+  imagePlaceholder: {
+    flex: 1, alignItems: "center", justifyContent: "center",
+    backgroundColor: Colors.card, gap: 4,
+  },
+  imagePlaceholderText: { color: Colors.textSecondary, fontSize: 11, fontFamily: "Cairo_400Regular" },
+  previewImage: { width: "100%", height: "100%" },
+  removeImageText: { color: Colors.destructive, fontSize: 12, fontFamily: "Cairo_400Regular" },
   submitBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 8, backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 15, marginTop: 8,

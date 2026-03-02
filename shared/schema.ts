@@ -22,6 +22,17 @@ export const authUsers = pgTable("auth_users", {
   noShowCount: text("no_show_count").notNull().default("0"),
   isBanned: boolean("is_banned").notNull().default(false),
   createdAt: text("created_at").notNull().default(sql`now()`),
+  passwordHash: text("password_hash"),
+  dateOfBirth: text("date_of_birth"),
+  profileImage: text("profile_image"),
+  venueName: text("venue_name"),
+  areaName: text("area_name"),
+  fieldSize: text("field_size"),
+  bookingPrice: text("booking_price"),
+  hasBathrooms: boolean("has_bathrooms"),
+  hasMarket: boolean("has_market"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

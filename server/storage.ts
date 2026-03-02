@@ -8,7 +8,24 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAuthUserByPhone(phone: string): Promise<AuthUser | undefined>;
   getAuthUserById(id: string): Promise<AuthUser | undefined>;
-  createAuthUser(data: { phone: string; name: string; role: string; deviceId?: string }): Promise<AuthUser>;
+  getAuthUserByVenueName(venueName: string): Promise<AuthUser | undefined>;
+  createAuthUser(data: {
+    phone: string;
+    name: string;
+    role: string;
+    deviceId?: string;
+    password?: string;
+    dateOfBirth?: string;
+    profileImage?: string;
+    venueName?: string;
+    areaName?: string;
+    fieldSize?: string;
+    bookingPrice?: string;
+    hasBathrooms?: boolean;
+    hasMarket?: boolean;
+    latitude?: string;
+    longitude?: string;
+  }): Promise<AuthUser>;
   storeOtp(phone: string, otp: string): Promise<void>;
   verifyOtp(phone: string, otp: string): Promise<boolean>;
 }
@@ -49,13 +66,34 @@ export class MemStorage implements IStorage {
     return this.authUsers.get(id);
   }
 
+  async getAuthUserByVenueName(venueName: string): Promise<AuthUser | undefined> {
+    return Array.from(this.authUsers.values()).find(
+      u => u.venueName?.toLowerCase() === venueName?.toLowerCase()
+    );
+  }
+
   async createAuthUser(data: {
     phone: string;
     name: string;
     role: string;
     deviceId?: string;
+    password?: string;
+    dateOfBirth?: string;
+    profileImage?: string;
+    venueName?: string;
+    areaName?: string;
+    fieldSize?: string;
+    bookingPrice?: string;
+    hasBathrooms?: boolean;
+    hasMarket?: boolean;
+    latitude?: string;
+    longitude?: string;
   }): Promise<AuthUser> {
     const id = randomUUID();
+    let passwordHash: string | null = null;
+    if (data.password) {
+      passwordHash = await bcrypt.hash(data.password, 10);
+    }
     const user: AuthUser = {
       id,
       phone: data.phone,
@@ -65,6 +103,17 @@ export class MemStorage implements IStorage {
       noShowCount: "0",
       isBanned: false,
       createdAt: new Date().toISOString(),
+      passwordHash,
+      dateOfBirth: data.dateOfBirth ?? null,
+      profileImage: data.profileImage ?? null,
+      venueName: data.venueName ?? null,
+      areaName: data.areaName ?? null,
+      fieldSize: data.fieldSize ?? null,
+      bookingPrice: data.bookingPrice ?? null,
+      hasBathrooms: data.hasBathrooms ?? null,
+      hasMarket: data.hasMarket ?? null,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
     };
     this.authUsers.set(id, user);
     return user;

@@ -48,21 +48,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { phone, name, role, otp, deviceId } = req.body as {
+      const {
+        phone, name, role, otp, deviceId,
+        password, dateOfBirth, profileImage,
+        venueName, areaName, fieldSize, bookingPrice,
+        hasBathrooms, hasMarket, latitude, longitude,
+      } = req.body as {
         phone: string;
         name: string;
         role: string;
         otp: string;
         deviceId?: string;
+        password?: string;
+        dateOfBirth?: string;
+        profileImage?: string;
+        venueName?: string;
+        areaName?: string;
+        fieldSize?: string;
+        bookingPrice?: string;
+        hasBathrooms?: boolean;
+        hasMarket?: boolean;
+        latitude?: string;
+        longitude?: string;
       };
 
       if (!phone || !name || !role || !otp) {
         return res.status(400).json({ message: "جميع الحقول مطلوبة" });
       }
 
-      const existing = await storage.getAuthUserByPhone(phone);
-      if (existing) {
+      if (!password) {
+        return res.status(400).json({ message: "كلمة المرور مطلوبة" });
+      }
+
+      const existingPhone = await storage.getAuthUserByPhone(phone);
+      if (existingPhone) {
         return res.status(409).json({ message: "هذا الرقم مسجل مسبقاً" });
+      }
+
+      if (role === "owner" && venueName) {
+        const existingVenue = await storage.getAuthUserByVenueName(venueName);
+        if (existingVenue) {
+          return res.status(409).json({ message: "اسم الملعب مستخدم مسبقاً" });
+        }
       }
 
       const validOtp = await storage.verifyOtp(phone, otp);
@@ -70,11 +97,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "رمز التحقق غير صحيح أو منتهي" });
       }
 
-      const user = await storage.createAuthUser({ phone, name, role, deviceId });
+      const user = await storage.createAuthUser({
+        phone, name, role, deviceId,
+        password, dateOfBirth, profileImage,
+        venueName, areaName, fieldSize, bookingPrice,
+        hasBathrooms, hasMarket, latitude, longitude,
+      });
       const token = signToken(user.id, user.role);
 
-      return res.json({ token, user: { id: user.id, name: user.name, phone: user.phone, role: user.role } });
+      return res.json({
+        token,
+        user: { id: user.id, name: user.name, phone: user.phone, role: user.role },
+      });
     } catch (e) {
+      console.error("Register error:", e);
       return res.status(500).json({ message: "خطأ في الخادم" });
     }
   });

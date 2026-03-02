@@ -18,6 +18,28 @@ export type AuthUser = {
   role: UserRole;
 };
 
+export type PendingPlayerData = {
+  name: string;
+  phone: string;
+  password: string;
+  dateOfBirth?: string;
+  profileImage?: string;
+};
+
+export type PendingOwnerData = {
+  name: string;
+  phone: string;
+  password: string;
+  venueName: string;
+  areaName: string;
+  fieldSize: string;
+  bookingPrice: string;
+  hasBathrooms: boolean;
+  hasMarket: boolean;
+  latitude: string;
+  longitude: string;
+};
+
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
@@ -25,7 +47,13 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (phone: string, otp: string) => Promise<void>;
-  register: (phone: string, name: string, role: UserRole, otp: string) => Promise<void>;
+  register: (
+    phone: string,
+    name: string,
+    role: UserRole,
+    otp: string,
+    extraData?: Record<string, string | boolean | undefined>
+  ) => Promise<void>;
   sendOtp: (phone: string) => Promise<{ devOtp?: string }>;
   continueAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
@@ -36,6 +64,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const AUTH_TOKEN_KEY = "shootha_auth_token";
 const AUTH_USER_KEY = "shootha_auth_user";
 const AUTH_GUEST_KEY = "shootha_auth_guest";
+export const PENDING_REG_KEY = "shootha_pending_reg";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -91,19 +120,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string,
     name: string,
     role: UserRole,
-    otp: string
+    otp: string,
+    extraData?: Record<string, string | boolean | undefined>
   ): Promise<void> => {
-    const res = await apiRequest("POST", "/api/auth/register", {
+    const payload: Record<string, string | boolean | undefined> = {
       phone,
       name,
       role,
       otp,
-    });
+      ...extraData,
+    };
+    const res = await apiRequest("POST", "/api/auth/register", payload);
     const data: { token: string; user: AuthUser } = await res.json();
     await Promise.all([
       AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token),
       AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user)),
       AsyncStorage.removeItem(AUTH_GUEST_KEY),
+      AsyncStorage.removeItem(PENDING_REG_KEY),
     ]);
     setToken(data.token);
     setUser(data.user);

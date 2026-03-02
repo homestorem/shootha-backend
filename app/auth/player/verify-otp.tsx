@@ -13,8 +13,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Colors } from "@/constants/colors";
-import { useAuth, UserRole } from "@/context/AuthContext";
+import { useAuth, UserRole, PENDING_REG_KEY, PendingPlayerData } from "@/context/AuthContext";
 
 const OTP_LENGTH = 6;
 
@@ -23,7 +24,6 @@ export default function PlayerVerifyOtpScreen() {
   const { login, register, sendOtp } = useAuth();
   const params = useLocalSearchParams<{
     phone: string;
-    name?: string;
     mode: "login" | "register";
     role?: string;
     devOtp?: string;
@@ -69,7 +69,20 @@ export default function PlayerVerifyOtpScreen() {
     setIsLoading(true);
     try {
       if (params.mode === "register") {
-        await register(params.phone, params.name ?? "", (params.role ?? "player") as UserRole, otp);
+        const pendingRaw = await AsyncStorage.getItem(PENDING_REG_KEY);
+        const pending: PendingPlayerData | null = pendingRaw ? JSON.parse(pendingRaw) : null;
+
+        await register(
+          params.phone,
+          pending?.name ?? "",
+          (params.role ?? "player") as UserRole,
+          otp,
+          {
+            password: pending?.password,
+            dateOfBirth: pending?.dateOfBirth,
+            profileImage: pending?.profileImage,
+          }
+        );
       } else {
         await login(params.phone, otp);
       }
