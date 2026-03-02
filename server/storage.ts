@@ -64,6 +64,7 @@ export interface IStorage {
   verifyOtp(phone: string, otp: string): Promise<boolean>;
   createSupportMessage(data: { userId: string; subject: string; message: string }): Promise<SupportMessage>;
   getSupportMessages(): Promise<SupportMessage[]>;
+  getAllOwners(): Promise<AuthUser[]>;
   getOwnerBookings(ownerId: string): Promise<OwnerBooking[]>;
   getOwnerBookingById(id: string): Promise<OwnerBooking | undefined>;
   createOwnerBooking(data: Omit<OwnerBooking, "id" | "createdAt">): Promise<OwnerBooking>;
@@ -246,6 +247,12 @@ export class MemStorage implements IStorage {
   async getSupportMessages(): Promise<SupportMessage[]> {
     return Array.from(this.supportMessages.values()).sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getAllOwners(): Promise<AuthUser[]> {
+    return Array.from(this.authUsers.values()).filter(
+      (u) => !u.deletedAt && u.role === "owner" && u.venueName
     );
   }
 

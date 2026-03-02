@@ -1,0 +1,166 @@
+REPLIT AI MASTER SCRIPT — CONVERT DEMO TO PRODUCTION
+
+Project: Shoot’ha
+Task: Convert application from DEMO mode to PRODUCTION READY state.
+
+IMPORTANT:
+Do NOT delete database tables or application structure.
+Only remove demo data and disable development behaviors.
+
+1️⃣ REMOVE ALL DEMO / MOCK DATA
+
+Delete all generated or fake records from database while keeping admin account.
+
+Clear data from:
+
+bookings
+
+venues
+
+reviews
+
+advertisements
+
+supportmessages
+
+waitlist
+
+playerrequests
+
+venueimages
+
+users (except ADMIN role)
+
+Ensure database schema remains intact.
+
+2️⃣ DISABLE SEED & MOCK SYSTEMS
+
+Search entire project for:
+
+seed
+
+mock
+
+demo
+
+fake
+
+generateData
+
+Disable or remove any automatic data creation scripts.
+
+If seed function exists:
+
+Disable execution in server startup.
+
+Example behavior required:
+Seed scripts must run ONLY in development mode.
+
+3️⃣ ENABLE PRODUCTION MODE
+
+Ensure environment variables exist:
+
+NODE_ENV=production
+
+If not present, create production configuration.
+
+Application must behave differently when production mode is active.
+
+4️⃣ REMOVE DEMO UI CONTENT
+
+Remove placeholder data such as:
+
+fake venue names
+
+demo users
+
+test bookings
+
+mock prices
+
+Replace with empty-state messages.
+
+5️⃣ ADD EMPTY STATE HANDLING
+
+When database returns empty results:
+
+Show friendly UI messages instead of errors.
+
+Examples:
+
+No venues:
+"لا توجد ملاعب حالياً"
+
+No bookings:
+"لا توجد حجوزات بعد"
+
+No notifications:
+"لا توجد إشعارات حالياً"
+
+6️⃣ PREVENT AUTO DATA GENERATION
+
+Ensure application never creates automatic:
+
+venues
+
+bookings
+
+users
+
+ads
+
+unless created by real users.
+
+7️⃣ VALIDATE CORE FLOWS
+
+Verify application works correctly with empty database:
+
+Player registration
+
+Owner registration
+
+Venue creation
+
+Booking creation
+
+Admin dashboard loads correctly
+
+Fix any crash caused by empty arrays or null data.
+
+8️⃣ SECURITY PREPARATION
+
+Ensure:
+
+passwords are hashed
+
+JWT required for protected routes
+
+role validation active
+
+owner cannot edit other venues
+
+9️⃣ PRODUCTION SAFETY CHECK
+
+Add global error handler to prevent server crashes.
+
+Application must not stop running on API errors.
+
+🔟 FINAL RESULT REQUIRED
+
+After execution:
+
+Application starts with zero demo data
+
+First real user becomes first real record
+
+No fake content visible anywhere
+
+System ready for real users
+
+✅ FINAL INSTRUCTION
+
+Apply changes safely without breaking existing functionality.
+
+Maintain modular architecture.
+
+Return confirmation of completed production cleanup

@@ -386,6 +386,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Public Venues API ───────────────────────────────────────────────────
+
+  const VENUE_COLORS = ["#1A2F1A", "#1A1A2F", "#2F1A1A", "#2F2A1A", "#1A2A2F"];
+  function getVenueColor(id: string): string {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = ((hash << 5) - hash) + id.charCodeAt(i);
+      hash |= 0;
+    }
+    return VENUE_COLORS[Math.abs(hash) % VENUE_COLORS.length];
+  }
+
+  function ownerToVenue(owner: any) {
+    const amenities: string[] = [];
+    if (owner.hasBathrooms) amenities.push("دورات مياه");
+    if (owner.hasMarket) amenities.push("مطعم/كافيتيريا");
+    return {
+      id: owner.id,
+      name: owner.venueName ?? "ملعب",
+      location: owner.areaName ? `${owner.areaName}، الموصل` : "الموصل",
+      district: owner.areaName ?? "الموصل",
+      rating: 0,
+      reviewCount: 0,
+      pricePerHour: parseInt(owner.bookingPrice ?? "0") || 0,
+      fieldSizes: owner.fieldSize ? [owner.fieldSize] : ["5 ضد 5"],
+      amenities,
+      imageColor: getVenueColor(owner.id),
+      isOpen: true,
+      openHours: "08:00 - 24:00",
+      lat: parseFloat(owner.latitude ?? "36.335") || 36.335,
+      lon: parseFloat(owner.longitude ?? "43.119") || 43.119,
+    };
+  }
+
+  app.get("/api/venues", async (_req, res) => {
+    try {
+      const owners = await storage.getAllOwners();
+      const venues = owners.map(ownerToVenue);
+      return res.json({ venues });
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
+  app.get("/api/venues/:id", async (req, res) => {
+    try {
+      const owner = await storage.getAuthUserById(req.params.id);
+      if (!owner || owner.role !== "owner" || !owner.venueName) {
+        return res.status(404).json({ message: "الملعب غير موجود" });
+      }
+      return res.json(ownerToVenue(owner));
+    } catch (e: any) {
+      return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
+    }
+  });
+
   // ─── Owner API ───────────────────────────────────────────────────────────
 
   app.get("/api/owner/venue", authMiddleware, ownerGuard, async (req, res) => {

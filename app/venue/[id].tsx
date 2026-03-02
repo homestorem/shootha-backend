@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,21 +7,23 @@ import {
   Pressable,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { useQuery } from "@tanstack/react-query";
 import { Colors } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { GuestModal } from "@/components/GuestModal";
 import {
-  MOCK_VENUES,
   TIME_SLOTS,
   useBookings,
   formatPrice,
   Booking,
+  Venue,
 } from "@/context/BookingsContext";
 
 const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
@@ -41,10 +43,6 @@ function generateDates(): { label: string; value: string }[] {
   return dates;
 }
 
-const BOOKED_SLOTS: Record<string, string[]> = {
-  [new Date().toISOString().split("T")[0]]: ["18:00", "19:00", "20:00"],
-};
-
 export default function VenueDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -52,28 +50,54 @@ export default function VenueDetailScreen() {
   const { isGuest } = useAuth();
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  const venue = MOCK_VENUES.find(v => v.id === id);
   const dates = generateDates();
 
   const [selectedDate, setSelectedDate] = useState(dates[0].value);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string>(venue?.fieldSizes[0] ?? "");
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [isBooking, setIsBooking] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  if (!venue) {
+  const { data: venue, isLoading, isError } = useQuery<Venue>({
+    queryKey: ["/api/venues", id],
+    enabled: !!id,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (venue && !selectedSize) {
+      setSelectedSize(venue.fieldSizes[0] ?? "");
+    }
+  }, [venue]);
+
+  if (isLoading) {
     return (
-      <View style={[styles.container, { paddingTop: topPadding }]}>
-        <Text style={{ color: Colors.text, textAlign: "center", marginTop: 40 }}>
+      <View style={[styles.container, styles.centerContent, { paddingTop: topPadding }]}>
+        <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  if (isError || !venue) {
+    return (
+      <View style={[styles.container, styles.centerContent, { paddingTop: topPadding }]}>
+        <Pressable style={styles.backBtnTop} onPress={() => router.back()}>
+          <Ionicons name="chevron-forward" size={22} color={Colors.text} />
+        </Pressable>
+        <Ionicons name="football-outline" size={52} color={Colors.textTertiary} />
+        <Text style={{ color: Colors.text, fontSize: 17, fontFamily: "Cairo_700Bold", marginTop: 12 }}>
           الملعب غير موجود
+        </Text>
+        <Text style={{ color: Colors.textSecondary, fontSize: 14, fontFamily: "Cairo_400Regular", marginTop: 6 }}>
+          ربما تم حذف الملعب أو تغيير بياناته
         </Text>
       </View>
     );
   }
 
-  const bookedForSelectedDate = BOOKED_SLOTS[selectedDate] ?? [];
+  const bookedForSelectedDate: string[] = [];
 
   const handleBooking = async () => {
     if (isGuest) {
@@ -294,6 +318,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  centerContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  backBtnTop: {
+    position: "absolute",
+    top: 60,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   imageArea: {
     height: 220,

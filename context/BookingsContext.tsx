@@ -53,89 +53,8 @@ interface BookingsContextValue {
 const BookingsContext = createContext<BookingsContextValue | null>(null);
 
 const STORAGE_KEY = 'shootha_bookings';
-
-export const MOCK_VENUES: Venue[] = [
-  {
-    id: '1',
-    name: 'ملعب النجوم',
-    location: 'حي النور، الموصل',
-    district: 'حي النور',
-    rating: 4.8,
-    reviewCount: 124,
-    pricePerHour: 25000,
-    fieldSizes: ['5 ضد 5', '7 ضد 7'],
-    amenities: ['إضاءة', 'مياه', 'غرف تبديل', 'موقف سيارات'],
-    imageColor: '#1A2F1A',
-    isOpen: true,
-    openHours: '8:00 - 24:00',
-    lat: 36.335,
-    lon: 43.119,
-  },
-  {
-    id: '2',
-    name: 'ملعب الأبطال',
-    location: 'حي الجامعة، الموصل',
-    district: 'حي الجامعة',
-    rating: 4.6,
-    reviewCount: 89,
-    pricePerHour: 30000,
-    fieldSizes: ['7 ضد 7', '11 ضد 11'],
-    amenities: ['إضاءة', 'مياه', 'كافيتيريا'],
-    imageColor: '#1A1A2F',
-    isOpen: true,
-    openHours: '9:00 - 23:00',
-    lat: 36.340,
-    lon: 43.130,
-  },
-  {
-    id: '3',
-    name: 'ستاد الفردوس',
-    location: 'حي الزهور، الموصل',
-    district: 'حي الزهور',
-    rating: 4.5,
-    reviewCount: 67,
-    pricePerHour: 20000,
-    fieldSizes: ['5 ضد 5'],
-    amenities: ['إضاءة', 'مياه'],
-    imageColor: '#2F1A1A',
-    isOpen: false,
-    openHours: '14:00 - 22:00',
-    lat: 36.325,
-    lon: 43.110,
-  },
-  {
-    id: '4',
-    name: 'ملعب الشباب',
-    location: 'حي المثنى، الموصل',
-    district: 'حي المثنى',
-    rating: 4.3,
-    reviewCount: 42,
-    pricePerHour: 22000,
-    fieldSizes: ['5 ضد 5', '7 ضد 7'],
-    amenities: ['إضاءة', 'موقف سيارات'],
-    imageColor: '#2F2A1A',
-    isOpen: true,
-    openHours: '10:00 - 24:00',
-    lat: 36.350,
-    lon: 43.125,
-  },
-  {
-    id: '5',
-    name: 'ملعب الرياضيين',
-    location: 'حي التحرير، الموصل',
-    district: 'حي التحرير',
-    rating: 4.7,
-    reviewCount: 156,
-    pricePerHour: 35000,
-    fieldSizes: ['7 ضد 7', '11 ضد 11'],
-    amenities: ['إضاءة', 'مياه', 'غرف تبديل', 'كافيتيريا', 'موقف سيارات'],
-    imageColor: '#1A2A2F',
-    isOpen: true,
-    openHours: '7:00 - 24:00',
-    lat: 36.355,
-    lon: 43.105,
-  },
-];
+const STORAGE_VERSION_KEY = 'shootha_bookings_version';
+const CURRENT_VERSION = '2';
 
 export const TIME_SLOTS = [
   '08:00', '09:00', '10:00', '11:00',
@@ -154,47 +73,16 @@ export function BookingsProvider({ children }: { children: ReactNode }) {
 
   const loadBookings = async () => {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setBookings(JSON.parse(stored));
+      const storedVersion = await AsyncStorage.getItem(STORAGE_VERSION_KEY);
+      if (storedVersion !== CURRENT_VERSION) {
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        await AsyncStorage.setItem(STORAGE_VERSION_KEY, CURRENT_VERSION);
+        setBookings([]);
       } else {
-        const sample: Booking[] = [
-          {
-            id: 'b1',
-            venueId: '1',
-            venueName: 'ملعب النجوم',
-            fieldSize: '7 ضد 7',
-            date: getDateString(1),
-            time: '19:00',
-            duration: 1,
-            price: 25000,
-            status: 'upcoming',
-            players: [
-              { id: 'p1', name: 'أحمد', paid: true },
-              { id: 'p2', name: 'محمد', paid: false },
-              { id: 'p3', name: 'علي', paid: true },
-            ],
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'b2',
-            venueId: '2',
-            venueName: 'ملعب الأبطال',
-            fieldSize: '5 ضد 5',
-            date: getDateString(-3),
-            time: '20:00',
-            duration: 1,
-            price: 30000,
-            status: 'completed',
-            players: [
-              { id: 'p1', name: 'أحمد', paid: true },
-              { id: 'p4', name: 'حسن', paid: true },
-            ],
-            createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
-          },
-        ];
-        setBookings(sample);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sample));
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setBookings(JSON.parse(stored));
+        }
       }
     } catch (e) {
       console.error('Failed to load bookings:', e);

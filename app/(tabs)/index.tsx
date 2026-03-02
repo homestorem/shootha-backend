@@ -15,9 +15,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { Colors } from "@/constants/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { useBookings, formatPrice, MOCK_VENUES } from "@/context/BookingsContext";
+import { useBookings, formatPrice, Venue } from "@/context/BookingsContext";
 import { VenueCard } from "@/components/VenueCard";
 import { SkeletonVenueCard } from "@/components/SkeletonCard";
 
@@ -195,7 +196,7 @@ function AdsBanner() {
   );
 }
 
-function LiveCounter() {
+function LiveCounter({ venueCount }: { venueCount: number }) {
   const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -216,10 +217,10 @@ function LiveCounter() {
         <View style={styles.liveDotInner} />
       </Animated.View>
       <View style={styles.liveTextBlock}>
-        <Text style={styles.liveNumber}>27</Text>
-        <Text style={[styles.liveLabel, { color: colors.textSecondary }]}>مباراة جارية الآن في الموصل</Text>
+        <Text style={styles.liveNumber}>{venueCount}</Text>
+        <Text style={[styles.liveLabel, { color: colors.textSecondary }]}>ملعب متاح للحجز في الموصل</Text>
       </View>
-      <Ionicons name="flame" size={22} color={Colors.warning} />
+      <Ionicons name="football-outline" size={22} color={Colors.primary} />
     </View>
   );
 }
@@ -271,10 +272,17 @@ function RebookCard() {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { isLoading } = useBookings();
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
+
+  const { data, isLoading } = useQuery<{ venues: Venue[] }>({
+    queryKey: ["/api/venues"],
+    staleTime: 30000,
+  });
+
+  const venues = data?.venues ?? [];
+  const topVenues = venues.slice(0, 3);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding, backgroundColor: colors.background }]}>
@@ -290,13 +298,12 @@ export default function HomeScreen() {
           </View>
           <Pressable style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="notifications-outline" size={22} color={colors.text} />
-            <View style={[styles.notifDot, { borderColor: colors.background }]} />
           </Pressable>
         </View>
 
         <AdsBanner />
 
-        <LiveCounter />
+        <LiveCounter venueCount={venues.length} />
 
         <RebookCard />
 
@@ -312,8 +319,16 @@ export default function HomeScreen() {
             <SkeletonVenueCard />
             <SkeletonVenueCard />
           </>
+        ) : topVenues.length === 0 ? (
+          <View style={styles.emptyVenues}>
+            <Ionicons name="football-outline" size={48} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد ملاعب حالياً</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              ستظهر الملاعب هنا فور تسجيل أصحابها
+            </Text>
+          </View>
         ) : (
-          MOCK_VENUES.slice(0, 3).map(venue => (
+          topVenues.map(venue => (
             <VenueCard key={venue.id} venue={venue} />
           ))
         )}
@@ -494,5 +509,24 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 14,
     fontFamily: "Cairo_600SemiBold",
+  },
+  emptyVenues: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+    paddingHorizontal: 32,
+    gap: 12,
+    marginHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: "Cairo_700Bold",
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: "Cairo_400Regular",
+    textAlign: "center",
+    lineHeight: 22,
   },
 });

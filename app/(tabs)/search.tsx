@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { Colors } from "@/constants/colors";
 import { useTheme } from "@/context/ThemeContext";
-import { MOCK_VENUES } from "@/context/BookingsContext";
+import { Venue } from "@/context/BookingsContext";
 import { VenueCard } from "@/components/VenueCard";
+import { SkeletonVenueCard } from "@/components/SkeletonCard";
 import SearchMapView from "@/components/SearchMapView";
 
 const FILTERS = ["الكل", "5 ضد 5", "7 ضد 7", "11 ضد 11", "متاح الآن"];
@@ -31,8 +33,15 @@ export default function SearchScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
+  const { data, isLoading } = useQuery<{ venues: Venue[] }>({
+    queryKey: ["/api/venues"],
+    staleTime: 30000,
+  });
+
+  const allVenues = data?.venues ?? [];
+
   const filtered = useMemo(() => {
-    let venues = [...MOCK_VENUES];
+    let venues = [...allVenues];
 
     if (query.trim()) {
       const q = query.trim().toLowerCase();
@@ -56,7 +65,7 @@ export default function SearchScreen() {
     }
 
     return venues;
-  }, [query, activeFilter, sortBy]);
+  }, [query, activeFilter, sortBy, allVenues]);
 
   return (
     <View style={[styles.container, { paddingTop: topPadding, backgroundColor: colors.background }]}>
@@ -134,40 +143,58 @@ export default function SearchScreen() {
           contentContainerStyle={[styles.content, { paddingBottom: bottomPadding + 110 }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.resultsHeader}>
-            <Text style={styles.resultsCount}>{filtered.length} ملعب</Text>
-            <Pressable style={styles.sortBtn} onPress={() => setShowSort(!showSort)}>
-              <Ionicons name="funnel-outline" size={14} color={Colors.textSecondary} />
-              <Text style={styles.sortBtnText}>{sortBy}</Text>
-              <Ionicons name={showSort ? "chevron-up" : "chevron-down"} size={13} color={Colors.textSecondary} />
-            </Pressable>
-          </View>
-
-          {showSort && (
-            <View style={[styles.sortDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {SORT_OPTIONS.map(opt => (
-                <Pressable
-                  key={opt}
-                  style={[styles.sortOption, sortBy === opt && styles.sortOptionActive]}
-                  onPress={() => { setSortBy(opt); setShowSort(false); }}
-                >
-                  <Text style={[styles.sortOptionText, sortBy === opt && styles.sortOptionTextActive]}>
-                    {opt}
-                  </Text>
-                  {sortBy === opt && <Ionicons name="checkmark" size={16} color={Colors.primary} />}
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          {filtered.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد نتائج</Text>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>جرّب البحث بكلمة مختلفة أو تغيير الفلتر</Text>
-            </View>
+          {isLoading ? (
+            <>
+              <SkeletonVenueCard />
+              <SkeletonVenueCard />
+              <SkeletonVenueCard />
+            </>
           ) : (
-            filtered.map(venue => <VenueCard key={venue.id} venue={venue} />)
+            <>
+              <View style={styles.resultsHeader}>
+                <Text style={styles.resultsCount}>{filtered.length} ملعب</Text>
+                <Pressable style={styles.sortBtn} onPress={() => setShowSort(!showSort)}>
+                  <Ionicons name="funnel-outline" size={14} color={Colors.textSecondary} />
+                  <Text style={styles.sortBtnText}>{sortBy}</Text>
+                  <Ionicons name={showSort ? "chevron-up" : "chevron-down"} size={13} color={Colors.textSecondary} />
+                </Pressable>
+              </View>
+
+              {showSort && (
+                <View style={[styles.sortDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  {SORT_OPTIONS.map(opt => (
+                    <Pressable
+                      key={opt}
+                      style={[styles.sortOption, sortBy === opt && styles.sortOptionActive]}
+                      onPress={() => { setSortBy(opt); setShowSort(false); }}
+                    >
+                      <Text style={[styles.sortOptionText, sortBy === opt && styles.sortOptionTextActive]}>
+                        {opt}
+                      </Text>
+                      {sortBy === opt && <Ionicons name="checkmark" size={16} color={Colors.primary} />}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              {allVenues.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="football-outline" size={52} color={colors.textTertiary} />
+                  <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد ملاعب حالياً</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    ستظهر الملاعب هنا فور تسجيل أصحابها في التطبيق
+                  </Text>
+                </View>
+              ) : filtered.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+                  <Text style={[styles.emptyTitle, { color: colors.text }]}>لا توجد نتائج</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>جرّب البحث بكلمة مختلفة أو تغيير الفلتر</Text>
+                </View>
+              ) : (
+                filtered.map(venue => <VenueCard key={venue.id} venue={venue} />)
+              )}
+            </>
           )}
         </ScrollView>
       ) : (
@@ -337,17 +364,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 60,
+    paddingHorizontal: 32,
     gap: 12,
   },
   emptyTitle: {
     color: Colors.text,
     fontSize: 18,
     fontFamily: "Cairo_700Bold",
+    textAlign: "center",
   },
   emptyText: {
     color: Colors.textSecondary,
     fontSize: 14,
     fontFamily: "Cairo_400Regular",
     textAlign: "center",
+    lineHeight: 22,
   },
 });

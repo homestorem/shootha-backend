@@ -54,7 +54,7 @@ The app uses file-based routing under the `app/` directory:
 - `context/AuthContext.tsx` – Authentication state (user, token, guest mode), persisted via AsyncStorage; `UserRole` includes supervisor; exposes `sendPhoneChangeOtp` and `updatePhone` for phone number change with OTP verification
 - `context/ThemeContext.tsx` – Global dark/light mode via `useTheme()` → `{ isDark, colors, toggleTheme }`; `getColors(isDark)` used by all screens/components
 - `context/LanguageContext.tsx` – Arabic/English only (Kurdish removed); `useLang()` → `{ language, setLanguage, t, isRTL }`; tab labels and all screen text use `t(key)`
-- `context/BookingsContext.tsx` – Bookings and venues state, persisted via AsyncStorage
+- `context/BookingsContext.tsx` – Player bookings state (local, persisted via AsyncStorage); no longer contains MOCK_VENUES; uses versioned storage (v2) to purge any old sample data on upgrade
 - `context/LocationContext.tsx` – Device GPS (expo-location), falls back to Mosul (36.335, 43.119)
 - TanStack React Query for server data fetching
 
@@ -87,6 +87,8 @@ The app uses file-based routing under the `app/` directory:
 - `GET /api/auth/me` – Returns authenticated user info (JWT protected)
 - `PATCH /api/auth/location` – Updates user lat/lon (JWT protected)
 - `POST /api/auth/supervisor-token` – Issues a temporary view-only JWT (requires `SUPERVISOR_MASTER_KEY`)
+- `GET /api/venues` – Public list of all registered venues (maps owner accounts → Venue shape)
+- `GET /api/venues/:id` – Public single venue by owner ID
 - `GET /api/owner/venue` – Get full owner venue details (owner only)
 - `PATCH /api/owner/venue` – Update venue info: name, area, fieldSize, bookingPrice, facilities (owner only)
 - `GET /api/owner/bookings?filter=today|month|year` – Get owner's bookings with optional filter (owner only)
