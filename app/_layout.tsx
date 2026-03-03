@@ -142,20 +142,22 @@ function AppNavigator() {
   const { isLoading, user, isGuest } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const [splashDone, setSplashDone] = useState(false);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (splashDone && !isLoading) {
-      if (user) {
-        if (user.role === "owner") {
-          router.replace("/owner");
-        } else {
-          router.replace("/(tabs)");
-        }
-      } else if (isGuest) {
-        router.replace("/(tabs)");
+    if (!splashDone || isLoading) return;
+    if (hasRedirected.current) return;
+    hasRedirected.current = true;
+    if (user) {
+      if (user.role === "owner") {
+        router.replace("/owner");
       } else {
-        router.replace("/select-role");
+        router.replace("/(tabs)");
       }
+    } else if (isGuest) {
+      router.replace("/(tabs)");
+    } else {
+      router.replace("/select-role");
     }
   }, [splashDone, isLoading, user, isGuest]);
 

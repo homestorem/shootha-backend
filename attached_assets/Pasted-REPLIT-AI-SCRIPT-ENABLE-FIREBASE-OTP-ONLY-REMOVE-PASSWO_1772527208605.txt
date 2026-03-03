@@ -1,0 +1,208 @@
+REPLIT AI SCRIPT — ENABLE FIREBASE OTP ONLY & REMOVE PASSWORD SYSTEM
+
+Project: Shoot’ha
+Important:
+Do NOT change UI design.
+Remove password logic completely.
+Authentication must be OTP only using Firebase Phone Auth.
+
+1️⃣ REMOVE PASSWORD SYSTEM COMPLETELY
+Frontend:
+
+Remove from all forms:
+
+password field
+
+confirm password field
+
+password validation
+
+password state
+
+password API sending
+
+Keep UI layout same but remove those inputs.
+
+Backend:
+
+Disable:
+
+password hashing
+
+bcrypt usage
+
+password comparison
+
+login with phone + password
+
+Keep password column in DB (optional) but DO NOT use it.
+
+2️⃣ INSTALL FIREBASE SDK (FRONTEND)
+
+Run:
+
+npx expo install firebase
+
+Create file:
+
+/client/utils/firebase.js
+
+Add:
+
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyByBGU7DJOW6xct7ZFv5o0qubBcVgvzRDs",
+  authDomain: "shootha-a3add.firebaseapp.com",
+  projectId: "shootha-a3add",
+  storageBucket: "shootha-a3add.firebasestorage.app",
+  messagingSenderId: "829963232496",
+  appId: "1:829963232496:web:ce690e9ee29ad64ca70e35",
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+3️⃣ IMPLEMENT OTP LOGIN FLOW (FRONTEND)
+
+Replace login logic with:
+
+User enters phone
+
+Call signInWithPhoneNumber
+
+User enters code
+
+Confirm code
+
+Get Firebase ID Token
+
+Send ID Token to backend
+
+Example logic:
+
+import { signInWithPhoneNumber } from "firebase/auth";
+
+const confirmation = await signInWithPhoneNumber(auth, phone);
+const result = await confirmation.confirm(code);
+const idToken = await result.user.getIdToken();
+
+await fetch("/auth/firebase-login", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${idToken}`,
+  }
+});
+4️⃣ INSTALL FIREBASE-ADMIN (SERVER)
+
+Run:
+
+npm install firebase-admin
+5️⃣ ADD FIREBASE ADMIN INITIALIZATION
+
+Create:
+
+/server/utils/firebaseAdmin.js
+
+Add:
+
+const admin = require("firebase-admin");
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+module.exports = admin;
+
+Make sure FIREBASE_SERVICE_ACCOUNT exists in Replit Secrets.
+
+6️⃣ CREATE FIREBASE LOGIN ROUTE (SERVER)
+
+Create route:
+
+POST /auth/firebase-login
+
+Logic:
+
+Extract Bearer ID Token
+
+Verify with admin.auth().verifyIdToken()
+
+Extract phone_number
+
+Find user by phone
+
+If not exists → create user (default role = player)
+
+Generate internal JWT
+
+Return JWT + user
+
+Example structure:
+
+const decoded = await admin.auth().verifyIdToken(idToken);
+const phone = decoded.phone_number;
+
+let user = await findUserByPhone(phone);
+if (!user) {
+  user = await createUser({ phone, role: "player" });
+}
+
+const token = jwt.sign(
+  { id: user.id, role: user.role },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+7️⃣ UPDATE REGISTRATION FLOW
+
+Registration now means:
+
+After OTP verified
+
+If user not exists
+
+Create user with:
+
+full_name
+
+birth_date
+
+gender
+
+role
+
+No password required anywhere.
+
+8️⃣ DELETE PASSWORD DEPENDENCIES
+
+Remove:
+
+bcrypt import
+
+password middleware
+
+reset password routes
+
+change password routes
+
+Delete password checks in:
+
+login route
+
+delete account route
+
+Account deletion must rely on JWT only.
+
+FINAL RESULT REQUIRED
+
+After applying:
+
+✔ No password fields anywhere
+✔ No password validation
+✔ OTP only login
+✔ Firebase token verified server-side
+✔ JWT issued internally
+✔ User auto-created if new
+✔ UI design unchanged

@@ -561,7 +561,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req as any).userId;
       const user = await storage.getAuthUserById(userId);
-      if (!user) return res.status(404).json({ message: "المستخدم غير موجود" });
       const { playerName, playerPhone, date, time, duration, price, source = "manual" } =
         req.body as any;
       if (!playerName?.trim() || !date || !time || !duration || price === undefined) {
@@ -589,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         time: String(time).includes(":") ? time : `${String(time).padStart(2, "0")}:00`,
         duration: Number(duration),
         price: Number(price),
-        fieldSize: user.fieldSize ?? "5×5",
+        fieldSize: user?.fieldSize ?? "5×5",
         status: "upcoming",
         source,
       });
@@ -601,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sendPushToUser(
             player.expoPublicToken,
             "حجز جديد ⚽",
-            `تم تأكيد حجزك الساعة ${time} بتاريخ ${date} في ${user.venueName ?? "الملعب"}`,
+            `تم تأكيد حجزك الساعة ${time} بتاريخ ${date} في ${user?.venueName ?? "الملعب"}`,
             { bookingId: booking.id }
           ).catch(() => {});
         }

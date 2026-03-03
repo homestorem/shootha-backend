@@ -111,6 +111,7 @@ The app uses file-based routing under the `app/` directory:
 - Currently uses `MemStorage` (in-memory Maps) as the active storage implementation
 - `IStorage` interface is defined, making it easy to swap to a database-backed implementation
 - OTPs expire after a set duration and are stored in memory
+- **IMPORTANT:** `reusePort: true` must NOT be used in `server.listen()` — it causes multiple backend instances to share the port, each with separate in-memory state, breaking OTP verification and session consistency. The server uses `server.listen(port, "0.0.0.0", callback)` without reusePort.
 
 **Build system:** `scripts/build.js` handles the Expo static web build + server bundling for deployment on Replit
 

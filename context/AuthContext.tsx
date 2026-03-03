@@ -102,9 +102,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem(AUTH_GUEST_KEY),
       ]);
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        registerPushToken(storedToken).catch(() => {});
+        try {
+          const url = new URL("/api/auth/me", getApiUrl()).toString();
+          const verifyRes = await fetch(url, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          if (verifyRes.ok) {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+            registerPushToken(storedToken).catch(() => {});
+          } else {
+            await Promise.all([
+              AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+              AsyncStorage.removeItem(AUTH_USER_KEY),
+            ]);
+          }
+        } catch {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
       } else if (storedGuest === "true") {
         setIsGuest(true);
       }
