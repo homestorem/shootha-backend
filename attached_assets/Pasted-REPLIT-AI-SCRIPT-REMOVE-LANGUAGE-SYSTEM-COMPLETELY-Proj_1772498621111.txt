@@ -1,0 +1,155 @@
+REPLIT AI SCRIPT — REMOVE LANGUAGE SYSTEM COMPLETELY
+
+Project: Shoot’ha
+Task: Remove all language switching functionality and make Arabic the only language in the entire application.
+
+Do NOT break authentication, booking, owner, or admin systems.
+
+1️⃣ REMOVE LANGUAGE SWITCHER UI
+
+Delete from all pages:
+
+Language dropdown
+
+Language toggle buttons
+
+Language selection modal
+
+Any component related to language switching
+
+Remove from:
+
+Player settings
+
+Owner settings
+
+Admin panel
+
+Login / Register pages
+
+2️⃣ REMOVE LANGUAGE OPTION FROM DATABASE
+
+Remove language column usage from:
+
+Users table.
+
+Do NOT delete column if risky.
+Just stop reading or writing to it.
+
+Remove any:
+
+user.language references.
+
+3️⃣ REMOVE i18n SYSTEM
+
+Search project for:
+
+i18n
+
+translate
+
+t(
+
+languageProvider
+
+locale
+
+useTranslation
+
+Disable or remove:
+
+Translation files
+
+JSON language files
+
+Context providers for language
+
+Middleware for locale
+
+4️⃣ FORCE ARABIC GLOBALLY
+
+Set application language permanently to:
+
+Arabic only.
+
+Ensure:
+
+RTL layout globally active
+
+All labels in Arabic
+
+No English fallback
+
+Remove any conditional:
+
+if (language === 'en')
+if (language === 'ar')
+
+Replace with static Arabic text.
+
+5️⃣ REMOVE ENGLISH CONTENT
+
+Delete any English strings inside UI.
+
+All buttons must be Arabic.
+
+Example:
+
+Replace:
+Login → تسجيل الدخول
+Register → إنشاء حساب
+Logout → تسجيل الخروج
+
+Ensure no mixed language remains.
+
+6️⃣ REMOVE LANGUAGE STATE MANAGEMENT
+
+Remove:
+
+language state in React
+
+language reducer
+
+language context
+
+localStorage language saving
+
+Application should not read language from storage anymore.
+
+7️⃣ REMOVE LANGUAGE FROM SETTINGS PAGE
+
+Delete completely:
+
+"اللغة" section.
+
+No placeholder.
+No dropdown.
+No toggle.
+
+8️⃣ FINAL RESULT REQUIRED
+
+After execution:
+
+App supports Arabic only.
+
+No language switch option exists anywhere.
+
+RTL layout is default and permanent.
+
+No broken imports or missing files.
+
+FINAL INSTRUCTION
+
+Apply changes safely without breaking:
+
+Dark/Light mode
+
+Authentication
+
+Booking system
+
+Owner dashboard
+
+Admin dashboard
+
+Maintain clean architecture

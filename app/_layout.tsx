@@ -180,8 +180,7 @@ function AppNavigator() {
         <Stack.Screen name="auth/owner/verify-otp" options={{ headerShown: false, animation: "slide_from_right" }} />
         <Stack.Screen name="venue/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
         <Stack.Screen name="booking/[id]" options={{ headerShown: false, animation: "slide_from_right" }} />
-        <Stack.Screen name="profile/edit" options={{ headerShown: false, animation: "slide_from_right" }} />
-        <Stack.Screen name="profile/support" options={{ headerShown: false, animation: "slide_from_right" }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
       {showSplash && <SplashOverlay onFinish={handleSplashFinish} />}
     </>

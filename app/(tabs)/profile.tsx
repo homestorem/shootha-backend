@@ -19,76 +19,9 @@ import { Colors } from "@/constants/colors";
 import { useBookings } from "@/context/BookingsContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useLang, type Language } from "@/context/LanguageContext";
+import { useLang } from "@/context/LanguageContext";
 import { GuestModal } from "@/components/GuestModal";
 import * as Haptics from "expo-haptics";
-
-function LanguagePickerModal({
-  visible,
-  onClose,
-}: {
-  visible: boolean;
-  onClose: () => void;
-}) {
-  const { colors } = useTheme();
-  const { language, setLanguage, t } = useLang();
-
-  const options: { key: Language; label: string }[] = [
-    { key: "ar", label: "العربية" },
-    { key: "en", label: "English" },
-  ];
-
-  const handleSelect = async (lang: Language) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await setLanguage(lang);
-    onClose();
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <Pressable style={modalStyles.overlay} onPress={onClose}>
-        <Pressable
-          style={[modalStyles.sheet, { backgroundColor: colors.card }]}
-          onPress={() => {}}
-        >
-          <View style={[modalStyles.handle, { backgroundColor: colors.border }]} />
-          <Text style={[modalStyles.sheetTitle, { color: colors.text }]}>
-            {t("selectLanguage")}
-          </Text>
-          {options.map(({ key, label }) => {
-            const selected = language === key;
-            return (
-              <Pressable
-                key={key}
-                style={[
-                  modalStyles.langOption,
-                  { borderBottomColor: colors.border },
-                  selected && { backgroundColor: "rgba(46,204,113,0.08)" },
-                ]}
-                onPress={() => handleSelect(key)}
-              >
-                <Text
-                  style={[
-                    modalStyles.langLabel,
-                    { color: selected ? Colors.primary : colors.text },
-                  ]}
-                >
-                  {label}
-                </Text>
-                {selected && (
-                  <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
-                )}
-              </Pressable>
-            );
-          })}
-          <Text style={[modalStyles.langNote, { color: colors.textTertiary }]}>
-            {t("languageRestartNote")}
-          </Text>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
 
 function DeleteAccountModal({
   visible,
@@ -315,10 +248,9 @@ export default function ProfileScreen() {
   const { bookings } = useBookings();
   const { user, isGuest, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const { language, t } = useLang();
+  const { t } = useLang();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showGuestModal, setShowGuestModal] = useState(false);
-  const [showLangPicker, setShowLangPicker] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -358,8 +290,6 @@ export default function ProfileScreen() {
     : user?.role === "supervisor"
     ? "shield-checkmark"
     : "football";
-
-  const langLabel = language === "ar" ? t("arabic") : t("english");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPadding }]}>
@@ -477,12 +407,6 @@ export default function ProfileScreen() {
               />
             }
           />
-          <SettingRow
-            icon="language-outline"
-            label={t("language")}
-            value={langLabel}
-            onPress={() => setShowLangPicker(true)}
-          />
           <SettingRow icon="location-outline" label={t("city")} value={t("mosul")} />
         </View>
 
@@ -543,7 +467,6 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <GuestModal visible={showGuestModal} onClose={() => setShowGuestModal(false)} />
-      <LanguagePickerModal visible={showLangPicker} onClose={() => setShowLangPicker(false)} />
       <DeleteAccountModal visible={showDeleteModal} onClose={() => setShowDeleteModal(false)} />
       <AboutModal visible={showAbout} onClose={() => setShowAbout(false)} />
     </View>
@@ -727,22 +650,6 @@ const modalStyles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     textAlign: "center",
     marginBottom: 16,
-  },
-  langOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-  },
-  langLabel: { fontSize: 16, fontFamily: "Cairo_400Regular" },
-  langNote: {
-    fontSize: 11,
-    fontFamily: "Cairo_400Regular",
-    textAlign: "center",
-    marginTop: 16,
-    opacity: 0.7,
   },
   card: {
     width: "100%",
