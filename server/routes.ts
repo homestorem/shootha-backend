@@ -916,7 +916,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: e?.message ?? "خطأ في الخادم" });
     }
   });
-
+  app.post("/api/venues", async (req, res) => {
+    try {
+      const { name, location, price } = req.body;
+  
+      if (!name || !location || !price) {
+        return res.status(400).json({ error: "Missing data" });
+      }
+  
+      if (!(global as any).venues) (global as any).venues = [];
+  
+      const newVenue = {
+        id: Date.now().toString(),
+        name,
+        location,
+        price,
+      };
+  
+      (global as any).venues.push(newVenue);
+  
+      return res.json(newVenue);
+    } catch (e: any) {
+      console.error("[POST /api/venues]", e);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
   app.get("/api/venues/:id", async (req, res) => {
     try {
       if (isFirebaseEnvConfigured()) {
