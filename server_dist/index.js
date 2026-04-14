@@ -2734,6 +2734,26 @@ async function registerRoutes(app2) {
       return res.status(500).json({ message: e?.message ?? "\u062E\u0637\u0623 \u0641\u064A \u0627\u0644\u062E\u0627\u062F\u0645" });
     }
   });
+  app2.post("/api/venues", async (req, res) => {
+    try {
+      const { name, location, price } = req.body;
+      if (!name || !location || !price) {
+        return res.status(400).json({ error: "Missing data" });
+      }
+      if (!global.venues) global.venues = [];
+      const newVenue = {
+        id: Date.now().toString(),
+        name,
+        location,
+        price
+      };
+      global.venues.push(newVenue);
+      return res.json(newVenue);
+    } catch (e) {
+      console.error("[POST /api/venues]", e);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
   app2.get("/api/venues/:id", async (req, res) => {
     try {
       if (isFirebaseEnvConfigured()) {
